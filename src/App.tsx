@@ -152,7 +152,7 @@ export default function App() {
           </div>
 
           <div className="pt-4 border-t border-slate-800/80 text-center text-[10px] text-slate-500">
-            © 2026 Bình Dân Học Vụ Số. Chương trình phổ cập kỹ năng số quốc gia phục vụ cán bộ, công chức, viên chức.
+            © 2026 Bình dân học vụ số. Chương trình phổ cập kỹ năng số quốc gia phục vụ cán bộ, công chức, viên chức.
           </div>
         </div>
       </footer>
