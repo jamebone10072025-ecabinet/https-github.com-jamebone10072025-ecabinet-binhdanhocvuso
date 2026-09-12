@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { ArrowLeft, CheckCircle, XCircle, QrCode, PlayCircle, Scale, Sparkles, BookOpen, ChevronLeft, ChevronRight, HelpCircle, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, QrCode, PlayCircle, Scale, Sparkles, BookOpen, ChevronLeft, ChevronRight, HelpCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { Lesson, Topic, Question } from "../types";
 import { TOPICS_DATA } from "../data/curriculumData";
+import { useProgress } from "../context/ProgressContext";
 
 interface LessonDetailProps {
   lesson: Lesson;
@@ -16,13 +17,30 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
   onBack,
   onSelectLesson,
 }) => {
+  const { isLessonCompleted, toggleLessonCompleted, recordQuizResult } = useProgress();
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [showExplanations, setShowExplanations] = useState<Record<string, boolean>>({});
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
+  const completed = isLessonCompleted(lesson.id);
+
   const handleSelectAnswer = (questionId: string, optionIndex: number) => {
-    setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+    const updatedAnswers = { ...selectedAnswers, [questionId]: optionIndex };
+    setSelectedAnswers(updatedAnswers);
     setShowExplanations((prev) => ({ ...prev, [questionId]: true }));
+
+    // Check if all questions have been answered
+    const totalQuestions = lesson.questions.length;
+    const answeredCount = Object.keys(updatedAnswers).length;
+    if (answeredCount >= totalQuestions) {
+      let correct = 0;
+      lesson.questions.forEach((q) => {
+        if (updatedAnswers[q.id] === q.correctAnswerIndex) {
+          correct++;
+        }
+      });
+      recordQuizResult(lesson.id, correct, totalQuestions);
+    }
   };
 
   // Find next and prev lessons
@@ -76,9 +94,22 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
               Bài {lesson.lessonNumber}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <QrCode className="w-4 h-4 text-red-700" />
-            <span>Đã tích hợp mã QR video micro-learning</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => toggleLessonCompleted(lesson.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer ${
+                completed
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-900/20 ring-2 ring-emerald-400/40"
+                  : "bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 hover:border-emerald-300"
+              }`}
+            >
+              <CheckCircle2 className={`w-4 h-4 ${completed ? "text-white" : "text-slate-400"}`} />
+              <span>{completed ? "Đã hoàn thành bài học" : "Đánh dấu hoàn thành"}</span>
+            </button>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <QrCode className="w-4 h-4 text-red-700" />
+              <span>Mã QR bài học</span>
+            </div>
           </div>
         </div>
 
@@ -302,6 +333,35 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
             );
           })}
         </div>
+
+        {/* Quiz Completion Banner */}
+        {Object.keys(selectedAnswers).length >= lesson.questions.length && (
+          <div className="p-5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-300 text-emerald-950 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-emerald-950">
+                  Bạn đã hoàn thành câu hỏi trắc nghiệm của bài học này!
+                </h4>
+                <p className="text-xs text-emerald-800">
+                  Tiến độ học tập đã được lưu tự động trên thiết bị của bạn.
+                </p>
+              </div>
+            </div>
+
+            {nextLesson && (
+              <button
+                onClick={() => onSelectLesson(nextLesson, currentTopic)}
+                className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-colors shrink-0"
+              >
+                <span>Học bài tiếp theo</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

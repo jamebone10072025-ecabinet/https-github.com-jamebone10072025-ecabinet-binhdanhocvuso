@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Bot, Send, User, Sparkles, AlertCircle, RefreshCw, Copy, Check } from "lucide-react";
+import { getSmartTutorResponse } from "../data/aiKnowledgeBase";
 
 interface Message {
   role: "user" | "assistant";
@@ -36,6 +37,7 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
   }, [messages, loading]);
 
   const quickQuestions = [
+    "Cách học 26 chuyên đề và lộ trình bồi dưỡng hiệu quả?",
     "Giải thích nguyên tắc 'Dữ liệu nào, công cụ đó' theo Luật AI 2025",
     "Cách nhận diện và xử lý cuộc gọi video lừa đảo Deepfake",
     "Quy tắc sao lưu 3-2-1 và cách bảo vệ tài liệu mật",
@@ -63,32 +65,39 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
         body: JSON.stringify({ message: query }),
       });
 
-      const data = await response.json();
-      if (data.reply) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: data.reply,
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
-      } else if (data.error) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `Xin lỗi: ${data.error}`,
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.reply) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: data.reply,
+              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            },
+          ]);
+          return;
+        }
       }
-    } catch (err: any) {
+
+      // If server returned non-200 or no reply, use authoritative knowledge base
+      const localReply = getSmartTutorResponse(query);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Không thể kết nối đến máy chủ Trợ lý AI. Vui lòng thử lại sau.",
+          content: localReply,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
+    } catch (_err: any) {
+      // In case of any network issue or static hosting (GitHub Pages), answer immediately from knowledge base
+      const localReply = getSmartTutorResponse(query);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: localReply,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);

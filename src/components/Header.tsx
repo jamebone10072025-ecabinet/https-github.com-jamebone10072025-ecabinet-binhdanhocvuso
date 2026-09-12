@@ -1,5 +1,6 @@
 import React from "react";
-import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck } from "lucide-react";
+import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw } from "lucide-react";
+import { useProgress } from "../context/ProgressContext";
 
 interface HeaderProps {
   activeTab: "curriculum" | "exam" | "tools" | "legal" | "ai";
@@ -8,6 +9,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenLegal }) => {
+  const { completedCount, totalLessons, completionPercentage, resetAllProgress } = useProgress();
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-xs">
       {/* Top red-gold identification bar - doubled height with scaled typography as requested */}
@@ -171,6 +173,54 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             <FileText className="w-3 h-3" />
             <span>Pháp lý</span>
           </button>
+        </div>
+      </div>
+
+      {/* Real-time Progress Tracking Bar */}
+      <div className="bg-slate-50/95 border-t border-slate-200/90 px-4 sm:px-8 py-2">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 font-bold text-red-950 bg-red-100/90 px-2.5 py-0.5 rounded-full text-[11px] border border-red-200">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Tiến độ bồi dưỡng:</span>
+            </span>
+            <span className="font-semibold text-slate-800">
+              Đã hoàn thành <strong className="text-red-700 font-bold">{completedCount}</strong>/{totalLessons} bài học micro-learning
+            </span>
+            <span className="text-slate-300 hidden sm:inline">•</span>
+            <span className="text-[11px] text-slate-500 hidden md:inline">
+              Tự động lưu trên thiết bị (localStorage)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="flex items-center gap-2 flex-1 sm:w-56 lg:w-72">
+              <div className="flex-1 bg-slate-200/90 rounded-full h-2.5 overflow-hidden shadow-inner">
+                <div
+                  className="bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 h-full rounded-full transition-all duration-500 shadow-xs"
+                  style={{ width: `${completionPercentage}%` }}
+                />
+              </div>
+              <span className="font-black text-xs text-emerald-700 w-11 text-right shrink-0">
+                {completionPercentage}%
+              </span>
+            </div>
+
+            {completedCount > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm("Bạn có chắc chắn muốn đặt lại toàn bộ tiến độ học tập về 0?")) {
+                    resetAllProgress();
+                  }
+                }}
+                title="Đặt lại tiến độ học tập"
+                className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded hover:bg-rose-50 inline-flex items-center gap-1 text-[11px]"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Đặt lại</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </header>
