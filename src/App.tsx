@@ -129,7 +129,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-[11px] leading-relaxed">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[11px] leading-relaxed">
             <div className="space-y-1">
               <div className="text-white font-bold">Cơ quan chủ trì & Phê duyệt</div>
               <div>Ủy ban Khoa học, Công nghệ và Môi trường của Quốc hội Khóa XVI</div>
@@ -142,11 +142,6 @@ export default function App() {
               <div>Chủ biên: TS. Trần Văn Khải (Phó Chủ nhiệm Ủy ban KH, CN & MT)</div>
               <div>Tổng biên tập: TS. Trần Văn Khải</div>
               <div>Quyết định ban hành số 757/QĐ-BKHCN</div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-white font-bold">Các cơ quan tiếp nhận chuyển giao</div>
-              <div>Văn phòng Quốc hội, Ban Nội chính Trung ương, Tòa án nhân dân tối cao, VKSND tối cao, UBND TP. Hồ Chí Minh, Tỉnh ủy Ninh Bình...</div>
               <div className="text-slate-500 pt-1">
                 Bảo vệ bản quyền theo quy định pháp luật. Tích hợp AI Gemini phục vụ nghiên cứu và học tập số.
               </div>
