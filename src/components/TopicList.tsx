@@ -118,44 +118,44 @@ export const TopicList: React.FC<TopicListProps> = ({ onSelectLesson }) => {
       </div>
 
       {/* View Switcher Tabs according to Appendix 2 structure */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/90 rounded-xl border border-slate-200">
+      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/90 rounded-xl border border-slate-200 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setViewMode("topics")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
             viewMode === "topics"
               ? "bg-white text-red-900 shadow-sm border border-slate-200/80"
               : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
           }`}
         >
           <Layers className="w-4 h-4 text-red-700" />
-          <span>26 chuyên đề chuẩn</span>
-          <span className="px-2 py-0.5 rounded-full text-[11px] bg-red-100 text-red-800 font-semibold">26</span>
+          <span>26 chuyên đề</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] bg-red-100 text-red-800 font-semibold">26</span>
         </button>
 
         <button
           onClick={() => setViewMode("master136")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
             viewMode === "master136"
               ? "bg-white text-red-900 shadow-sm border border-slate-200/80"
               : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
           }`}
         >
           <BookOpen className="w-4 h-4 text-red-700" />
-          <span>Bảng 1: 136 bài học micro-learning</span>
-          <span className="px-2 py-0.5 rounded-full text-[11px] bg-amber-100 text-amber-900 font-semibold">136 bài</span>
+          <span>136 bài học</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] bg-amber-100 text-amber-900 font-semibold">136</span>
         </button>
 
         <button
           onClick={() => setViewMode("programVideos")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+          className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
             viewMode === "programVideos"
               ? "bg-white text-red-900 shadow-sm border border-slate-200/80"
               : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
           }`}
         >
           <Video className="w-4 h-4 text-red-700" />
-          <span>Bảng 2: Video cấp chương trình</span>
-          <span className="px-2 py-0.5 rounded-full text-[11px] bg-rose-100 text-rose-900 font-semibold">3 video</span>
+          <span>Video chương trình</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] bg-rose-100 text-rose-900 font-semibold">3</span>
         </button>
       </div>
 

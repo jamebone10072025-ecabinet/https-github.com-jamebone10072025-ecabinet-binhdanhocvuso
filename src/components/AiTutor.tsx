@@ -347,7 +347,7 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
       </div>
 
       {/* Chat Messages Container with Scrollable Thread */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[540px]">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[70vh] sm:h-[560px]">
         {/* Scrollable Thread */}
         <div ref={scrollContainerRef} className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
           {messages.map((m) => {

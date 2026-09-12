@@ -12,59 +12,59 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
   const { completedCount, totalLessons, completionPercentage, resetAllProgress } = useProgress();
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-xs">
-      {/* Top red-gold identification bar - doubled height with scaled typography as requested */}
-      <div className="bg-gradient-to-r from-red-900 via-rose-900 to-red-950 text-white px-4 sm:px-8 py-5 sm:py-6 lg:py-7 flex flex-wrap items-center justify-between gap-4 border-b-2 border-amber-400/40 shadow-md min-h-[90px] sm:min-h-[105px]">
-        <div className="flex items-center gap-3.5 sm:gap-4">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center shrink-0 shadow-inner">
-            <span className="inline-block w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-400 animate-pulse ring-4 ring-amber-400/30"></span>
+      {/* Top red-gold identification bar */}
+      <div className="bg-gradient-to-r from-red-900 via-rose-900 to-red-950 text-white px-3 sm:px-8 py-3.5 sm:py-6 lg:py-7 flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 border-b-2 border-amber-400/40 shadow-md">
+        <div className="flex items-center gap-2.5 sm:gap-4">
+          <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center shrink-0 shadow-inner">
+            <span className="inline-block w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-amber-400 animate-pulse ring-4 ring-amber-400/30"></span>
           </div>
           <div>
-            <span className="block text-lg sm:text-2xl lg:text-3xl font-black tracking-wide uppercase text-amber-300 drop-shadow-md leading-tight">
+            <span className="block text-base sm:text-2xl lg:text-3xl font-black tracking-wide uppercase text-amber-300 drop-shadow-md leading-tight">
               Bình dân học vụ số tỉnh Gia Lai
             </span>
-            <span className="block text-xs sm:text-sm font-medium text-rose-200 mt-0.5 tracking-normal">
+            <span className="block text-[11px] sm:text-sm font-medium text-rose-200 mt-0.5 tracking-normal line-clamp-1 sm:line-clamp-none">
               Chương trình phổ cập kỹ năng số toàn dân & chuẩn hóa năng lực cán bộ công vụ
             </span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-red-100 text-xs sm:text-sm font-semibold">
-          <span className="bg-black/30 px-3.5 py-1.5 rounded-lg border border-amber-400/30 text-amber-200 shadow-xs">
-            Nghị quyết số 398/NQ-UBTVQH16
+        <div className="flex items-center gap-2 text-red-100 text-[11px] sm:text-sm font-semibold">
+          <span className="bg-black/30 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg border border-amber-400/30 text-amber-200 shadow-xs whitespace-nowrap">
+            NQ 398/NQ-UBTVQH16
           </span>
           <span className="hidden sm:inline opacity-60">|</span>
           <span className="hidden sm:inline bg-black/30 px-3.5 py-1.5 rounded-lg border border-white/20 text-slate-100 shadow-xs">
-            Chỉ thị số 14/CT-TTg
+            Chỉ thị 14/CT-TTg
           </span>
         </div>
       </div>
 
       {/* Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-18">
           {/* Logo & Brand */}
           <div 
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group"
             onClick={() => setActiveTab("curriculum")}
           >
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-700 to-rose-900 flex items-center justify-center text-white shadow-md shadow-red-900/20 ring-2 ring-amber-400/50 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-6 h-6 text-amber-300" />
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-red-700 to-rose-900 flex items-center justify-center text-white shadow-md shadow-red-900/20 ring-2 ring-amber-400/50 group-hover:scale-105 transition-transform shrink-0">
+              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-lg sm:text-xl text-slate-900 tracking-tight leading-tight">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="font-black text-base sm:text-xl text-slate-900 tracking-tight leading-tight">
                   BÌNH DÂN HỌC VỤ SỐ
                 </h1>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-800 border border-red-200">
+                <span className="hidden sm:inline px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-800 border border-red-200 whitespace-nowrap">
                   Tập 1: Khối cơ quan nhà nước
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium line-clamp-1">
                 Khung kiến thức và kỹ năng số cơ bản micro-learning
               </p>
             </div>
           </div>
 
-          {/* Nav Items */}
+          {/* Nav Items (Desktop) */}
           <nav className="hidden md:flex items-center gap-1.5">
             <button
               id="nav-tab-curriculum"
@@ -141,8 +141,16 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             </button>
           </nav>
 
-          {/* Mobile indicator & CTA */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile CTA & Legal button */}
+          <div className="flex md:hidden items-center gap-1.5">
+            <button
+              onClick={onOpenLegal}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-50 text-xs font-semibold flex items-center gap-1 shadow-2xs"
+              title="Căn cứ pháp lý"
+            >
+              <FileText className="w-3.5 h-3.5 text-slate-500" />
+              <span>Pháp lý</span>
+            </button>
             <button
               onClick={() => setActiveTab("exam")}
               className="px-3 py-1.5 rounded-lg bg-red-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs"
@@ -152,77 +160,30 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             </button>
           </div>
         </div>
-
-        {/* Mobile secondary tab row */}
-        <div className="flex md:hidden overflow-x-auto py-2 gap-1.5 border-t border-slate-100 text-xs no-scrollbar">
-          <button
-            onClick={() => setActiveTab("curriculum")}
-            className={`px-3 py-1.5 rounded-md font-medium whitespace-nowrap ${
-              activeTab === "curriculum" ? "bg-red-700 text-white" : "bg-slate-100 text-slate-700"
-            }`}
-          >
-            26 chuyên đề
-          </button>
-          <button
-            onClick={() => setActiveTab("tools")}
-            className={`px-3 py-1.5 rounded-md font-medium whitespace-nowrap ${
-              activeTab === "tools" ? "bg-red-700 text-white" : "bg-slate-100 text-slate-700"
-            }`}
-          >
-            Công cụ số
-          </button>
-          <button
-            onClick={() => setActiveTab("maps")}
-            className={`px-3 py-1.5 rounded-md font-medium whitespace-nowrap ${
-              activeTab === "maps" ? "bg-red-700 text-white" : "bg-slate-100 text-slate-700"
-            }`}
-          >
-            Bản đồ số
-          </button>
-          <button
-            onClick={() => setActiveTab("ai")}
-            className={`px-3 py-1.5 rounded-md font-medium whitespace-nowrap ${
-              activeTab === "ai" ? "bg-red-700 text-white" : "bg-slate-100 text-slate-700"
-            }`}
-          >
-            Trợ lý AI
-          </button>
-          <button
-            onClick={onOpenLegal}
-            className="px-3 py-1.5 rounded-md font-medium whitespace-nowrap bg-slate-100 text-slate-700 flex items-center gap-1"
-          >
-            <FileText className="w-3 h-3" />
-            <span>Pháp lý</span>
-          </button>
-        </div>
       </div>
 
       {/* Real-time Progress Tracking Bar */}
-      <div className="bg-slate-50/95 border-t border-slate-200/90 px-4 sm:px-8 py-2">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 font-bold text-red-950 bg-red-100/90 px-2.5 py-0.5 rounded-full text-[11px] border border-red-200">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Tiến độ bồi dưỡng:</span>
+      <div className="bg-slate-50/95 border-t border-slate-200/90 px-3 sm:px-8 py-2">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="inline-flex items-center gap-1 font-bold text-red-950 bg-red-100/90 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] border border-red-200 shrink-0">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span>Tiến độ:</span>
             </span>
-            <span className="font-semibold text-slate-800">
-              Đã hoàn thành <strong className="text-red-700 font-bold">{completedCount}</strong>/{totalLessons} bài học micro-learning
-            </span>
-            <span className="text-slate-300 hidden sm:inline">•</span>
-            <span className="text-[11px] text-slate-500 hidden md:inline">
-              Tự động lưu trên thiết bị (localStorage)
+            <span className="font-semibold text-slate-800 text-[11px] sm:text-xs truncate">
+              <strong className="text-red-700 font-bold">{completedCount}</strong>/{totalLessons} bài học
             </span>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="flex items-center gap-2 flex-1 sm:w-56 lg:w-72">
-              <div className="flex-1 bg-slate-200/90 rounded-full h-2.5 overflow-hidden shadow-inner">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 w-24 sm:w-56 lg:w-72">
+              <div className="flex-1 bg-slate-200/90 rounded-full h-2 sm:h-2.5 overflow-hidden shadow-inner">
                 <div
                   className="bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 h-full rounded-full transition-all duration-500 shadow-xs"
                   style={{ width: `${completionPercentage}%` }}
                 />
               </div>
-              <span className="font-black text-xs text-emerald-700 w-11 text-right shrink-0">
+              <span className="font-black text-[11px] sm:text-xs text-emerald-700 w-8 sm:w-11 text-right shrink-0">
                 {completionPercentage}%
               </span>
             </div>

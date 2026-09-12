@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Header } from "./components/Header";
+import { MobileBottomNav } from "./components/MobileBottomNav";
 import { TopicList } from "./components/TopicList";
 import { LessonDetail } from "./components/LessonDetail";
 import { ExamCertification } from "./components/ExamCertification";
@@ -86,7 +87,7 @@ export default function App() {
       />
 
       {/* Official Government Aesthetic Footer */}
-      <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 mt-12 py-10 text-xs">
+      <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 mt-12 py-10 pb-24 md:pb-10 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
             <div className="flex items-center gap-3">
@@ -155,6 +156,15 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile Fixed Bottom Navigation Bar */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+        }}
+        onOpenLegal={() => setIsLegalModalOpen(true)}
+      />
     </div>
   );
 }
