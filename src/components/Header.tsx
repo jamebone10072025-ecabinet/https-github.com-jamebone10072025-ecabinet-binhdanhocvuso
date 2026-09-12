@@ -1,10 +1,10 @@
 import React from "react";
-import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw, MapPin, Radio, FileCheck } from "lucide-react";
+import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw, MapPin, Radio, FileCheck, Mic } from "lucide-react";
 import { useProgress } from "../context/ProgressContext";
 
 interface HeaderProps {
-  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast";
-  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast") => void;
+  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation";
+  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation") => void;
   onOpenLegal: () => void;
 }
 
@@ -77,6 +77,19 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             >
               <BookOpen className="w-4 h-4 text-red-600" />
               <span>26 chuyên đề</span>
+            </button>
+
+            <button
+              id="nav-tab-simulation"
+              onClick={() => setActiveTab("simulation")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === "simulation"
+                  ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <Mic className="w-4 h-4 text-rose-600 animate-pulse" />
+              <span>Tiếp công dân AI</span>
             </button>
 
             <button

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, CheckCircle, XCircle, QrCode, PlayCircle, Scale, Sparkles, BookOpen, ChevronLeft, ChevronRight, HelpCircle, ShieldCheck, CheckCircle2, Copy, Check, BookText, FileText, Radio, Headphones } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, QrCode, PlayCircle, Scale, Sparkles, BookOpen, ChevronLeft, ChevronRight, HelpCircle, ShieldCheck, CheckCircle2, Copy, Check, BookText, FileText, Radio, Headphones, Mic } from "lucide-react";
 import { Lesson, Topic, Question } from "../types";
 import { TOPICS_DATA } from "../data/curriculumData";
 import { useProgress } from "../context/ProgressContext";
@@ -11,6 +11,7 @@ interface LessonDetailProps {
   onBack: () => void;
   onSelectLesson: (nextLesson: Lesson, nextTopic: Topic) => void;
   onOpenPodcast?: (topicId: number) => void;
+  onOpenSimulation?: () => void;
 }
 
 export const LessonDetail: React.FC<LessonDetailProps> = ({
@@ -19,6 +20,7 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
   onBack,
   onSelectLesson,
   onOpenPodcast,
+  onOpenSimulation,
 }) => {
   const { isLessonCompleted, toggleLessonCompleted, recordQuizResult } = useProgress();
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
@@ -147,6 +149,16 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {onOpenSimulation && (
+                <button
+                  onClick={onOpenSimulation}
+                  className="px-3.5 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-rose-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer hover:scale-105"
+                  title="Thực hành hội thoại tiếp công dân ảo với Gemini Live Voice"
+                >
+                  <Mic className="w-4 h-4 text-rose-400 animate-pulse" />
+                  <span>Mô phỏng Tiếp dân AI</span>
+                </button>
+              )}
               {onOpenPodcast && (
                 <button
                   onClick={() => onOpenPodcast(lesson.topicId)}

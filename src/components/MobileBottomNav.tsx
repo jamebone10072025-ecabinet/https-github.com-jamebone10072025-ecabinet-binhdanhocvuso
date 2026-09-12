@@ -1,9 +1,9 @@
 import React from "react";
-import { BookOpen, Award, Wrench, MapPin, Bot, FileText, Radio, FileCheck } from "lucide-react";
+import { BookOpen, Award, Wrench, MapPin, Bot, FileText, Radio, FileCheck, Mic } from "lucide-react";
 
 interface MobileBottomNavProps {
-  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast";
-  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast") => void;
+  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation";
+  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation") => void;
   onOpenLegal: () => void;
 }
 
@@ -19,13 +19,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       icon: BookOpen,
     },
     {
+      id: "simulation" as const,
+      label: "Tiếp dân AI",
+      icon: Mic,
+    },
+    {
       id: "podcast" as const,
       label: "Podcast",
       icon: Radio,
     },
     {
       id: "docai" as const,
-      label: "Soát văn bản",
+      label: "Soát VB",
       icon: FileCheck,
     },
     {
@@ -40,14 +45,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     },
     {
       id: "ai" as const,
-      label: "Trợ lý AI",
+      label: "Trợ lý",
       icon: Bot,
     },
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-1.5 py-1 pb-safe">
-      <div className="grid grid-cols-6 items-center justify-around gap-0.5 max-w-lg mx-auto">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-1 py-1 pb-safe">
+      <div className="grid grid-cols-7 items-center justify-around gap-0.5 max-w-lg mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;

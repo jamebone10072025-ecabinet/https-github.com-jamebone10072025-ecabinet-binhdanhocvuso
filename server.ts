@@ -1,11 +1,15 @@
 import express, { Request, Response } from "express";
+import http from "http";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
+import { WebSocketServer, WebSocket } from "ws";
 import dotenv from "dotenv";
 import { getSmartTutorResponse } from "./src/data/aiKnowledgeBase";
 import { generateFallbackDocumentAnalysis } from "./src/data/multimodalHelper";
 import { getFallbackPodcastScript } from "./src/data/podcastData";
+import { CITIZEN_SCENARIOS } from "./src/data/citizenScenarios";
+import { getFallbackCitizenTurn, generateEvaluationReport, DialogueTurn } from "./src/data/citizenSimulationHelper";
 
 dotenv.config();
 
@@ -550,7 +554,338 @@ ${lessonTitle ? `- Bài học trọng tâm: ${lessonTitle}` : ""}`;
   }
 });
 
+// Citizen Simulation Dialogue Turn Endpoint (Gemini 3.8 Flash roleplay & real-time coaching)
+app.post("/api/citizen-simulation/turn", async (req: Request, res: Response) => {
+  try {
+    const { scenarioId, message, history = [], customScenario } = req.body;
+    if (!message || typeof message !== "string") {
+      res.status(400).json({ error: "Nội dung đối thoại không được để trống." });
+      return;
+    }
+
+    const scenario = CITIZEN_SCENARIOS.find((s) => s.id === scenarioId) || customScenario || CITIZEN_SCENARIOS[0];
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      const fallbackResult = getFallbackCitizenTurn(scenario.id, message, history);
+      res.json({
+        ...fallbackResult,
+        modelUsed: "offline-rule-engine",
+      });
+      return;
+    }
+
+    const ai = getAIClient();
+
+    const systemInstruction = `${scenario.systemPrompt}
+
+BỐI CẢNH ĐỊA PHƯƠNG TỈNH GIA LAI:
+- Tỉnh Gia Lai hiện vận hành mô hình chính quyền địa phương 2 cấp (Cấp Tỉnh và 135 Xã/Phường, không còn cấp huyện). Bộ phận Một cửa cấp xã là nơi tiếp nhận và giải quyết hầu hết thủ tục hành chính liên thông (Nghị định 118/2025/NĐ-CP).
+- Các hệ thống công vụ cốt lõi: Cổng Dịch vụ công Quốc gia, CSDL quốc gia về dân cư VNeID mức 2, Dịch vụ công liên thông Đề án 06.
+
+YÊU CẦU PHẢN HỒI (RẤT QUAN TRỌNG):
+1. Bạn PHẢI đóng vai công dân thật, phản hồi bằng lời nói trực tiếp (không viết lời dẫn chuyện như 'Bác H'Blang nói:...', chỉ trả lời đúng câu thoại của công dân).
+2. Độ dài: Giữ súc tích từ 2 đến 4 câu thoại tự nhiên, có cảm xúc chân thật (vui, bớt lo, hạ hỏa hoặc cáu giận tùy theo cách ứng xử của cán bộ).
+3. ĐÁNH GIÁ KÈM THEO: Ở cuối phản hồi, bạn cung cấp một khối JSON ẩn sau dòng phân cách '---COACHING---' theo cấu trúc:
+---COACHING---
+{"sentiment":"positive"|"neutral"|"negative","coachingTip":"Lời khuyên ngắn gọn về chuẩn mực tiếp dân và căn cứ pháp lý","suggestedAction":"Gợi ý hành động hoặc câu nói tiếp theo cho cán bộ"}`;
+
+    const contents: any[] = [];
+    if (Array.isArray(history) && history.length > 0) {
+      for (const turn of history) {
+        if (turn.role && turn.content) {
+          contents.push({
+            role: turn.role === "citizen" || turn.role === "model" ? "model" : "user",
+            parts: [{ text: turn.content }],
+          });
+        }
+      }
+    }
+    contents.push({
+      role: "user",
+      parts: [{ text: message }],
+    });
+
+    let rawOutput = "";
+    let modelUsed = "gemini-3.8-flash";
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents,
+        config: {
+          systemInstruction,
+          temperature: 0.8,
+        },
+      });
+      rawOutput = response.text || "";
+    } catch (err: any) {
+      console.warn("[Citizen Turn] gemini-3.8-flash error, trying gemini-3.1-flash-lite:", err?.message || err);
+      try {
+        modelUsed = "gemini-3.1-flash-lite";
+        const fallbackResp = await ai.models.generateContent({
+          model: "gemini-3.1-flash-lite",
+          contents,
+          config: {
+            systemInstruction,
+            temperature: 0.8,
+          },
+        });
+        rawOutput = fallbackResp.text || "";
+      } catch (err2: any) {
+        console.warn("[Citizen Turn] Fallback to rule engine:", err2?.message || err2);
+        const fallbackResult = getFallbackCitizenTurn(scenario.id, message, history);
+        res.json({
+          ...fallbackResult,
+          modelUsed: "offline-rule-engine",
+        });
+        return;
+      }
+    }
+
+    let reply = rawOutput;
+    let sentiment: "positive" | "neutral" | "negative" = "neutral";
+    let coachingTip = "Cán bộ cần duy trì thái độ chuẩn mực '4 xin, 4 luôn' và nắm chắc quy định pháp luật.";
+    let suggestedAction = "Lắng nghe và hướng dẫn công dân cụ thể.";
+
+    if (rawOutput.includes("---COACHING---")) {
+      const parts = rawOutput.split("---COACHING---");
+      reply = parts[0].trim();
+      try {
+        const jsonMatch = parts[1].match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.sentiment) sentiment = parsed.sentiment;
+          if (parsed.coachingTip) coachingTip = parsed.coachingTip;
+          if (parsed.suggestedAction) suggestedAction = parsed.suggestedAction;
+        }
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+
+    res.json({
+      reply,
+      sentiment,
+      coachingTip,
+      suggestedAction,
+      modelUsed,
+    });
+  } catch (error: any) {
+    console.error("Citizen Turn Error:", error);
+    const fallbackResult = getFallbackCitizenTurn(req.body?.scenarioId || "vneid_elderly", req.body?.message || "", []);
+    res.json({
+      ...fallbackResult,
+      modelUsed: "offline-rule-engine",
+    });
+  }
+});
+
+// Citizen Simulation Evaluation Report Endpoint
+app.post("/api/citizen-simulation/evaluate", async (req: Request, res: Response) => {
+  try {
+    const { scenarioId, history = [], customScenario } = req.body;
+    const scenario = CITIZEN_SCENARIOS.find((s) => s.id === scenarioId) || customScenario || CITIZEN_SCENARIOS[0];
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      const evaluation = generateEvaluationReport(scenario, history);
+      res.json({ evaluation, modelUsed: "offline-evaluator" });
+      return;
+    }
+
+    const ai = getAIClient();
+    const systemInstruction = `Bạn là Trưởng Ban Giám khảo Hội thi Cán bộ Tiếp công dân Giỏi & Chuyên gia Cải cách Hành chính công tỉnh Gia Lai.
+Nhiệm vụ: Chấm điểm và thẩm định kỹ năng giao tiếp tiếp công dân của cán bộ qua đoạn hội thoại thực tế.
+
+TIÊU CHÍ CHẤM ĐIỂM (Thang điểm 100):
+1. Thái độ & Văn hóa công vụ (25 điểm): Thực hiện '4 xin, 4 luôn' (xin chào, xin lỗi, xin cảm ơn, xin phép; luôn mỉm cười, luôn nhẹ nhàng, luôn lắng nghe, luôn giúp đỡ).
+2. Tính chuẩn xác pháp lý (25 điểm): Căn cứ đúng Nghị định 118/2025/NĐ-CP, Đề án 06, Luật Tiếp công dân, Luật Khiếu nại, mô hình chính quyền 2 cấp tỉnh Gia Lai (135 xã/phường).
+3. Kỹ năng xoa dịu xung đột & lắng nghe (25 điểm): Không tranh cãi, không đổ lỗi, biết nhận trách nhiệm khi cơ quan chậm trễ.
+4. Hướng dẫn số hóa & chuyển đổi số (25 điểm): Hướng dẫn công dân sử dụng dịch vụ công trực tuyến, VNeID, tự thao tác cho các lần sau.
+
+Định dạng trả về: Duy nhất một chuỗi JSON hợp lệ với cấu trúc:
+{
+  "overallScore": number (0-100),
+  "grade": "Xuất sắc" | "Khá" | "Trung bình" | "Cần rèn luyện thêm",
+  "criteriaScores": {
+    "attitude": number (0-25),
+    "legalKnowledge": number (0-25),
+    "deEscalation": number (0-25),
+    "digitalGuidance": number (0-25)
+  },
+  "strengths": string[],
+  "improvements": string[],
+  "sampleModelAnswer": "Câu thoại mẫu mực lý tưởng nhất cán bộ nên nói trong tình huống này",
+  "legalSummary": "Tóm tắt các căn cứ pháp lý áp dụng"
+}`;
+
+    const conversationTranscript = history
+      .map((t: DialogueTurn) => `${t.role === "user" ? "CÁN BỘ" : "CÔNG DÂN"}: ${t.content}`)
+      .join("\n");
+
+    const prompt = `TÌNH HUỐNG: ${scenario.title} (${scenario.citizenName} - ${scenario.location})
+TÓM TẮT: ${scenario.summary}
+CÁC CĂN CỨ PHÁP LÝ LIÊN QUAN: ${scenario.lawsReferenced.join(", ")}
+
+BIÊN BẢN HỘI THOẠI THỰC TẾ GIỮA CÁN BỘ VÀ CÔNG DÂN:
+"""
+${conversationTranscript}
+"""
+
+Hãy chấm điểm chi tiết và xuất kết quả theo đúng định dạng JSON yêu cầu.`;
+
+    let responseText = "";
+    try {
+      const resp = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: prompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          temperature: 0.3,
+        },
+      });
+      responseText = resp.text || "";
+    } catch (err: any) {
+      console.warn("[Citizen Eval] Error calling Gemini, falling back:", err?.message || err);
+    }
+
+    if (responseText) {
+      try {
+        const parsed = JSON.parse(responseText);
+        res.json({ evaluation: parsed, modelUsed: "gemini-3.8-flash" });
+        return;
+      } catch (e) {
+        // fallback
+      }
+    }
+
+    const fallbackEval = generateEvaluationReport(scenario, history);
+    res.json({ evaluation: fallbackEval, modelUsed: "offline-evaluator" });
+  } catch (error: any) {
+    console.error("Evaluation error:", error);
+    res.status(500).json({ error: "Lỗi tạo bảng đánh giá tiếp dân." });
+  }
+});
+
 async function startServer() {
+  const server = http.createServer(app);
+
+  // Setup WebSocket Server for Gemini Live API
+  const wss = new WebSocketServer({ server, path: "/api/live" });
+
+  wss.on("connection", async (clientWs: WebSocket) => {
+    console.log("[WebSocket] Client connected to /api/live");
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      clientWs.send(
+        JSON.stringify({
+          type: "status",
+          ready: false,
+          message: "Chế độ mô phỏng giọng nói thông minh nội bộ sẵn sàng. Để kích hoạt Gemini Live WebSocket đa phương thức thời gian thực, vui lòng cấu hình GEMINI_API_KEY.",
+          isOffline: true,
+        })
+      );
+      return;
+    }
+
+    let liveSession: any = null;
+
+    clientWs.on("message", async (rawData) => {
+      try {
+        const data = JSON.parse(rawData.toString());
+
+        if (data.type === "init") {
+          const scenarioId = data.scenarioId || "vneid_elderly";
+          const scenario = CITIZEN_SCENARIOS.find((s) => s.id === scenarioId) || CITIZEN_SCENARIOS[0];
+          const voiceName = data.voice || "Zephyr";
+
+          try {
+            const ai = getAIClient();
+            liveSession = await ai.live.connect({
+              model: "gemini-3.1-flash-live-preview",
+              config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                  voiceConfig: { prebuiltVoiceConfig: { voiceName } },
+                },
+                systemInstruction: `${scenario.systemPrompt}
+QUY TẮC: Bạn là công dân thực tế tại Gia Lai, phản hồi ngắn gọn 2-3 câu thoại bằng tiếng Việt, thể hiện giọng điệu chân thật.`,
+                outputAudioTranscription: {},
+                inputAudioTranscription: {},
+              },
+              callbacks: {
+                onmessage: (message: LiveServerMessage) => {
+                  const audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+                  const textPart = message.serverContent?.modelTurn?.parts?.[0]?.text;
+                  const transcription = (message as any).serverContent?.outputAudioTranscription?.text;
+
+                  if (audio) {
+                    clientWs.send(JSON.stringify({ type: "audio", audio }));
+                  }
+                  if (transcription || textPart) {
+                    clientWs.send(JSON.stringify({ type: "transcription", text: transcription || textPart }));
+                  }
+                  if (message.serverContent?.interrupted) {
+                    clientWs.send(JSON.stringify({ type: "interrupted", interrupted: true }));
+                  }
+                  if (message.serverContent?.turnComplete) {
+                    clientWs.send(JSON.stringify({ type: "turnComplete" }));
+                  }
+                },
+                onclose: () => {
+                  console.log("[Gemini Live Session Closed]");
+                },
+                onerror: (err) => {
+                  console.warn("[Gemini Live Session Error]:", err);
+                  clientWs.send(JSON.stringify({ type: "error", error: String(err?.message || err) }));
+                },
+              },
+            });
+
+            clientWs.send(
+              JSON.stringify({
+                type: "ready",
+                message: "Đã thiết lập kết nối Gemini Live API Real-time Voice thành công!",
+                model: "gemini-3.1-flash-live-preview",
+              })
+            );
+          } catch (connErr: any) {
+            console.warn("[Gemini Live Connect Error]:", connErr?.message || connErr);
+            clientWs.send(
+              JSON.stringify({
+                type: "fallback",
+                message: "Gemini Live API đang bận hoặc quá tải, chuyển sang chế độ Voice Turn-by-Turn tối ưu.",
+                error: connErr?.message,
+              })
+            );
+          }
+        } else if (data.type === "audio" && liveSession && data.audio) {
+          liveSession.sendRealtimeInput({
+            audio: { data: data.audio, mimeType: "audio/pcm;rate=16000" },
+          });
+        } else if (data.type === "text" && liveSession && data.text) {
+          liveSession.sendRealtimeInput({
+            text: data.text,
+          });
+        }
+      } catch (err: any) {
+        console.error("[WebSocket message processing error]:", err);
+      }
+    });
+
+    clientWs.on("close", () => {
+      if (liveSession && typeof liveSession.close === "function") {
+        try {
+          liveSession.close();
+        } catch (e) {
+          // ignore
+        }
+      }
+    });
+  });
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -565,8 +900,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server and WebSocket running on http://0.0.0.0:${PORT}`);
   });
 }
 

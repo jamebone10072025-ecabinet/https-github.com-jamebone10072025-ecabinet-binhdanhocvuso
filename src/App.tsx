@@ -10,12 +10,13 @@ import { MapsGroundingAssistant } from "./components/MapsGroundingAssistant";
 import { LegalDocsModal } from "./components/LegalDocsModal";
 import { DocumentIntelligence } from "./components/DocumentIntelligence";
 import { AudioPodcastPlayer } from "./components/AudioPodcastPlayer";
+import { CitizenVoiceSimulation } from "./components/CitizenVoiceSimulation";
 import { Lesson, Topic } from "./types";
 import { FULL_TOPIC_LIST, TOPICS_DATA } from "./data/curriculumData";
 import { ShieldCheck, BookOpen, ExternalLink, Award, FileText } from "lucide-react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast">("curriculum");
+  const [activeTab, setActiveTab] = useState<"curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation">("curriculum");
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic | typeof FULL_TOPIC_LIST[0] | null>(null);
   const [selectedPodcastTopicId, setSelectedPodcastTopicId] = useState<number>(1);
@@ -74,6 +75,7 @@ export default function App() {
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 onOpenPodcast={(topicId) => handleOpenPodcastForTopic(topicId)}
+                onOpenSimulation={() => setActiveTab("simulation")}
               />
             ) : (
               <TopicList
@@ -82,6 +84,10 @@ export default function App() {
               />
             )}
           </div>
+        )}
+
+        {activeTab === "simulation" && (
+          <CitizenVoiceSimulation onSendToAI={handleSendPromptToAI} />
         )}
 
         {activeTab === "podcast" && (
@@ -102,6 +108,7 @@ export default function App() {
             onSendToAI={handleSendPromptToAI}
             onOpenDocAI={() => setActiveTab("docai")}
             onOpenPodcast={(topicId) => handleOpenPodcastForTopic(topicId || 1)}
+            onOpenSimulation={() => setActiveTab("simulation")}
           />
         )}
         

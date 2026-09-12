@@ -16,15 +16,17 @@ import {
   Send,
   Radio,
   FileCheck,
+  Mic,
 } from "lucide-react";
 
 interface PracticeToolsProps {
   onSendToAI: (promptText: string) => void;
   onOpenDocAI?: () => void;
   onOpenPodcast?: (topicId?: number) => void;
+  onOpenSimulation?: () => void;
 }
 
-export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI, onOpenDocAI, onOpenPodcast }) => {
+export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI, onOpenDocAI, onOpenPodcast, onOpenSimulation }) => {
   const [activeSubTool, setActiveSubTool] = useState<"prompt" | "smart" | "gap" | "checklist" | "search">("prompt");
 
   // Prompt Builder State
@@ -130,11 +132,34 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI, onOpen
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Featured AI Upgrades Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        {onOpenSimulation && (
+          <div
+            onClick={onOpenSimulation}
+            className="p-4 rounded-2xl bg-gradient-to-br from-rose-900 to-red-950 text-white border border-rose-700/50 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group"
+          >
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                <Mic className="w-3 h-3 text-rose-300 animate-pulse" />
+                <span>Gemini Live API</span>
+              </div>
+              <h4 className="font-bold text-sm text-white group-hover:text-amber-200 transition-colors">
+                Mô phỏng tiếp công dân ảo
+              </h4>
+              <p className="text-xs text-rose-200 line-clamp-2 leading-relaxed">
+                Hội thoại giọng nói thời gian thực với công dân AI, rèn luyện kỹ năng 4 xin 4 luôn và xử lý bức xúc.
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-amber-300">
+              <Mic className="w-5 h-5" />
+            </div>
+          </div>
+        )}
+
         {onOpenDocAI && (
           <div
             onClick={onOpenDocAI}
-            className="p-4 rounded-2xl bg-gradient-to-br from-red-900 to-rose-950 text-white border border-red-800/40 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group"
+            className="p-4 rounded-2xl bg-gradient-to-br from-red-900 to-slate-950 text-white border border-red-800/40 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group"
           >
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
@@ -157,7 +182,7 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI, onOpen
         {onOpenPodcast && (
           <div
             onClick={() => onOpenPodcast(1)}
-            className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-red-950 text-white border border-slate-800 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group"
+            className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-red-950 text-white border border-slate-800 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group sm:col-span-2 lg:col-span-1"
           >
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-400/20 text-rose-300 border border-rose-400/30">
