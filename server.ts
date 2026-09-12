@@ -4,13 +4,16 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { getSmartTutorResponse } from "./src/data/aiKnowledgeBase";
+import { generateFallbackDocumentAnalysis } from "./src/data/multimodalHelper";
+import { getFallbackPodcastScript } from "./src/data/podcastData";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ limit: "25mb", extended: true }));
 
 // Initialize Gemini Client safely
 let aiClient: GoogleGenAI | null = null;
@@ -355,6 +358,195 @@ Nhiệm vụ của bạn:
   } catch (error: any) {
     console.error("Maps search error:", error);
     res.status(500).json({ error: "Lỗi xử lý tra cứu bản đồ công vụ." });
+  }
+});
+
+// Multimodal Document & Scanned Form Intelligence Endpoint
+app.post("/api/document-intelligence", async (req: Request, res: Response) => {
+  try {
+    const { fileData, mimeType, documentText, taskType = "format_check", userNotes } = req.body;
+
+    if (!fileData && (!documentText || !documentText.trim())) {
+      res.status(400).json({ error: "Vui lòng cung cấp hình ảnh/tài liệu quét hoặc văn bản cần phân tích." });
+      return;
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    let systemInstruction = "";
+    let promptTitle = "";
+
+    if (taskType === "format_check") {
+      promptTitle = "SOÁT LỖI THỂ THỨC VĂN BẢN THEO NGHỊ ĐỊNH 30/2020/NĐ-CP";
+      systemInstruction = `Bạn là Chuyên gia Cao cấp Thẩm định Thể thức & Kỹ thuật Soạn thảo Văn bản Hành chính Nhà nước theo Nghị định số 30/2020/NĐ-CP của Chính phủ.
+Nhiệm vụ của bạn là rà soát chi tiết tài liệu (hình ảnh/bản quét/dự thảo văn bản) và chỉ rõ:
+1. Đánh giá tổng quan độ tuân thủ (Thang điểm 100/100, Mức độ: Đạt chuẩn / Cần hiệu đính / Không đạt).
+2. Danh sách các lỗi sai thể thức phát hiện được (chỉ rõ thành phần nào sai: Quốc hiệu - Tiêu ngữ, Tên cơ quan, Số và ký hiệu, Địa danh ngày tháng, Tên loại & trích yếu, Căn lề, Phông chữ Times New Roman, Cỡ chữ & kiểu chữ đậm/nghiêng, Thẩm quyền ký, Chữ ký số, Nơi nhận). Trích dẫn rõ quy định tại Nghị định 30/2020/NĐ-CP.
+3. Hướng dẫn sửa cụ thể từng lỗi sai.
+4. Bản văn bản hoàn chỉnh đã được hiệu đính chuẩn mực 100% theo Nghị định 30/2020/NĐ-CP để cán bộ có thể sao chép sử dụng ngay.
+Lưu ý đặc thù tỉnh Gia Lai: Hiện nay Gia Lai vận hành mô hình chính quyền địa phương 2 cấp (Cấp Tỉnh và 135 Xã/Phường, không còn cấp huyện). Tên cơ quan ban hành cấp xã phải ghi đúng: "ỦY BAN NHÂN DÂN XÃ/PHƯỜNG..." trực thuộc tỉnh.`;
+    } else if (taskType === "task_matrix") {
+      promptTitle = "TRÍCH XUẤT MA TRẬN NHIỆM VỤ & HẠN ĐỊNH CÔNG VỤ";
+      systemInstruction = `Bạn là Thư ký Tổng hợp & Cán bộ Tham mưu Hành chính Công vụ.
+Nhiệm vụ: Phân tích kỹ lưỡng văn bản chỉ đạo, nghị quyết, quyết định hoặc công văn được cung cấp và trích xuất:
+1. Thông tin văn bản: Số ký hiệu, Ngày ban hành, Cơ quan ban hành, Trích yếu.
+2. 3 Nhiệm vụ then chốt cần chỉ đạo triển khai NGAY TRONG 24-48 GIỜ.
+3. Bảng Ma trận Phân công Nhiệm vụ (dạng bảng Markdown có các cột: STT | Nội dung nhiệm vụ | Đơn vị chủ trì | Đơn vị phối hợp | Hạn hoàn thành (Deadline) | Sản phẩm đầu ra | Mức độ ưu tiên [Hỏa tốc/Khẩn/Thường]).
+4. Các mốc báo cáo tiến độ và lưu ý an toàn thông tin (nếu văn bản có đề cập dữ liệu cá nhân hoặc thông tin mật).`;
+    } else if (taskType === "error_diagnosis") {
+      promptTitle = "CHẨN ĐOÁN SỰ CỐ ẢNH CHỤP MÀN HÌNH PHẦN MỀM CÔNG VỤ";
+      systemInstruction = `Bạn là Kỹ sư Trưởng Hỗ trợ Kỹ thuật Công nghệ Thông tin & An toàn Mạng thuộc Ban Chỉ đạo Chuyển đổi số.
+Nhiệm vụ: Phân tích ảnh chụp màn hình thông báo lỗi hoặc mô tả sự cố trên các hệ thống phần mềm nghiệp vụ khối cơ quan nhà nước (Cổng Dịch vụ công Quốc gia, Hệ thống Một cửa điện tử, CSDL quốc gia về dân cư VNeID, Hệ thống quản lý văn bản điều hành, Lỗi chữ ký số USB Token / VNPT-CA / Viettel-CA / Ban Cơ yếu Chính phủ, Lỗi kết nối mạng nội bộ hoặc chứng thư số SSL/TLS).
+Yêu cầu phân tích:
+1. Nhận diện sự cố: Tên phần mềm, Thông điệp/Mã lỗi chính xác hiển thị trên ảnh màn hình.
+2. Nguyên nhân kỹ thuật gốc rễ (do mạng, do driver chữ ký số chưa cắm/chưa nhận, do tài khoản hết hạn, trình duyệt chặn tải file, hay lỗi đồng bộ dữ liệu...).
+3. Hướng dẫn 3 bước khắc phục nhanh (Step-by-step) dành cho cán bộ công chức tự làm được ngay trong 3 phút mà không cần gọi IT.
+4. Trường hợp nào cần liên hệ bộ phận hỗ trợ kỹ thuật chuyên trách và số hotline/kênh liên hệ khuyến nghị.
+5. Cảnh báo an toàn: Tuyệt đối không bấm vào các link lạ giả mạo hỗ trợ kỹ thuật hoặc chia sẻ mã OTP/mật khẩu Token.`;
+    } else {
+      promptTitle = "TÓM TẮT VĂN BẢN HÀNH CHÍNH (EXECUTIVE SUMMARY)";
+      systemInstruction = `Bạn là Chuyên gia Tóm lược Văn bản & Soạn thảo Báo cáo Lãnh đạo cấp cao.
+Nhiệm vụ: Đọc toàn bộ nội dung tài liệu (bản quét/hình ảnh/dự thảo) và cô đọng thành 1 Bản ghi nhớ tóm lược (Executive Brief) trong đúng 1 trang:
+1. Trích yếu & Thẩm quyền ban hành.
+2. Mục tiêu & Ý nghĩa chiến lược của văn bản.
+3. 5 Điểm chỉ đạo mới hoặc quan trọng nhất cần ghi nhớ.
+4. Trách nhiệm thực hiện đối với cơ quan, đơn vị và cán bộ công chức.
+5. Đề xuất hành động tức thì cho cơ quan tiếp nhận.`;
+    }
+
+    if (!apiKey) {
+      res.json({
+        analysis: generateFallbackDocumentAnalysis(taskType, documentText || "", userNotes),
+        model: "offline-knowledge-engine",
+        taskType,
+      });
+      return;
+    }
+
+    const ai = getAIClient();
+
+    let cleanedBase64 = fileData;
+    let actualMime = mimeType || "image/jpeg";
+    if (fileData && fileData.includes(",")) {
+      const parts = fileData.split(",");
+      const meta = parts[0];
+      cleanedBase64 = parts[1];
+      const match = meta.match(/:(.*?);/);
+      if (match && match[1]) {
+        actualMime = match[1];
+      }
+    }
+
+    const promptText = `YÊU CẦU: ${promptTitle}\n\n${userNotes ? `Ghi chú của người dùng: ${userNotes}\n\n` : ""}${documentText ? `NỘI DUNG VĂN BẢN/DỰ THẢO:\n"""\n${documentText}\n"""\n\n` : ""}${fileData ? "Vui lòng phân tích kỹ lưỡng hình ảnh/tài liệu đính kèm bên trên." : ""}`;
+
+    const parts: any[] = [];
+    if (cleanedBase64) {
+      parts.push({
+        inlineData: {
+          mimeType: actualMime,
+          data: cleanedBase64,
+        },
+      });
+    }
+    parts.push({ text: promptText });
+
+    let responseText = "";
+    let usedModel = "gemini-3.8-flash";
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: [{ role: "user", parts }],
+        config: {
+          systemInstruction,
+          temperature: 0.2,
+        },
+      });
+      responseText = response.text || "";
+    } catch (err: any) {
+      console.warn("[Doc Intelligence] gemini-3.8-flash failed, trying gemini-3.1-flash-lite:", err?.message || err);
+      try {
+        usedModel = "gemini-3.1-flash-lite";
+        const fallbackResp = await ai.models.generateContent({
+          model: "gemini-3.1-flash-lite",
+          contents: [{ role: "user", parts }],
+          config: {
+            systemInstruction,
+            temperature: 0.2,
+          },
+        });
+        responseText = fallbackResp.text || "";
+      } catch (err2: any) {
+        console.warn("[Doc Intelligence] Fallback to domain engine:", err2?.message || err2);
+        responseText = generateFallbackDocumentAnalysis(taskType, documentText || "", userNotes);
+      }
+    }
+
+    res.json({
+      analysis: responseText || generateFallbackDocumentAnalysis(taskType, documentText || "", userNotes),
+      model: usedModel,
+      taskType,
+    });
+  } catch (error: any) {
+    console.error("Document Intelligence Error:", error);
+    res.status(500).json({
+      error: "Không thể xử lý tài liệu vào thời điểm này: " + (error?.message || "Lỗi máy chủ"),
+    });
+  }
+});
+
+// AI Micro-learning Podcast Script Generator Endpoint
+app.post("/api/podcast-script", async (req: Request, res: Response) => {
+  try {
+    const { topicId, topicTitle, lessonTitle, customTopic } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    const systemInstruction = `Bạn là Biên tập viên Trưởng & Phát thanh viên Kênh Học tập Số "Bình dân học vụ số tỉnh Gia Lai".
+Nhiệm vụ của bạn là soạn kịch bản phát thanh Podcast Micro-learning công vụ (thời lượng nghe chuẩn 2-3 phút, khoảng 250 - 350 từ tiếng Việt).
+Phong cách: Truyền thanh hành chính trang trọng, ấm áp, truyền cảm hứng, ngắn gọn, dễ nhớ, dễ thực hiện cho cán bộ, công chức, viên chức.
+Cấu trúc kịch bản bắt buộc gồm 3 phần:
+1. [LỜI CHÀO & ĐẶT VẤN ĐỀ - 30 giây]: Lời chào trân trọng từ "Bình dân học vụ số tỉnh Gia Lai", giới thiệu nhanh chuyên đề và nêu lý do tại sao kỹ năng này trực tiếp giúp cán bộ hoàn thành nhiệm vụ và tránh rủi ro pháp lý.
+2. [3 NGUYÊN TẮC CÔNG VỤ VÀNG - 60 giây]: 3 hành động cụ thể "Dễ nhớ - Dễ làm - Phải tuân thủ" (gắn với các căn cứ như Luật An ninh mạng, Luật Bảo vệ dữ liệu cá nhân, Nghị định 30/2020/NĐ-CP, Nghị định 118/2025/NĐ-CP, VNeID...).
+3. [LỜI NHẮC CÔNG VỤ & KHẨU HIỆU HÀNH ĐỘNG - 30 giây]: Đúc kết 1 câu khẩu hiệu hành động sâu sắc (ví dụ: "AI làm nhanh - Con người làm chuẩn", "Dữ liệu nào - Công cụ đó"), lời chúc công tác tốt và hẹn gặp lại trong chuyên đề tiếp theo.`;
+
+    const prompt = `Hãy soạn kịch bản Podcast Micro-learning 2 phút cho chuyên đề:
+- Chuyên đề số: ${topicId || "Chuyên đề"}
+- Tên chuyên đề: ${topicTitle || customTopic || "Kỹ năng số cơ bản"}
+${lessonTitle ? `- Bài học trọng tâm: ${lessonTitle}` : ""}`;
+
+    if (!apiKey) {
+      res.json({
+        script: getFallbackPodcastScript(topicId, topicTitle || customTopic || "Kỹ năng số"),
+        topicTitle: topicTitle || customTopic,
+      });
+      return;
+    }
+
+    const ai = getAIClient();
+    let scriptText = "";
+
+    try {
+      const resp = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: prompt,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        },
+      });
+      scriptText = resp.text || "";
+    } catch (err: any) {
+      console.warn("[Podcast Script] Gemini call error, using fallback:", err?.message || err);
+      scriptText = getFallbackPodcastScript(topicId, topicTitle || customTopic || "Kỹ năng số");
+    }
+
+    res.json({
+      script: scriptText || getFallbackPodcastScript(topicId, topicTitle || customTopic || "Kỹ năng số"),
+      topicTitle: topicTitle || customTopic,
+    });
+  } catch (error: any) {
+    console.error("Podcast script error:", error);
+    res.status(500).json({ error: "Lỗi tạo kịch bản phát thanh số." });
   }
 });
 

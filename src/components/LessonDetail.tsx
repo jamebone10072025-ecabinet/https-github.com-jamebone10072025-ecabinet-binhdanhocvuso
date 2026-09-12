@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, CheckCircle, XCircle, QrCode, PlayCircle, Scale, Sparkles, BookOpen, ChevronLeft, ChevronRight, HelpCircle, ShieldCheck, CheckCircle2, Copy, Check, BookText, FileText } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, QrCode, PlayCircle, Scale, Sparkles, BookOpen, ChevronLeft, ChevronRight, HelpCircle, ShieldCheck, CheckCircle2, Copy, Check, BookText, FileText, Radio, Headphones } from "lucide-react";
 import { Lesson, Topic, Question } from "../types";
 import { TOPICS_DATA } from "../data/curriculumData";
 import { useProgress } from "../context/ProgressContext";
@@ -10,6 +10,7 @@ interface LessonDetailProps {
   topic: Topic | any;
   onBack: () => void;
   onSelectLesson: (nextLesson: Lesson, nextTopic: Topic) => void;
+  onOpenPodcast?: (topicId: number) => void;
 }
 
 export const LessonDetail: React.FC<LessonDetailProps> = ({
@@ -17,6 +18,7 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
   topic,
   onBack,
   onSelectLesson,
+  onOpenPodcast,
 }) => {
   const { isLessonCompleted, toggleLessonCompleted, recordQuizResult } = useProgress();
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
@@ -144,13 +146,25 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
               </p>
             </div>
 
-            <button
-              onClick={() => setIsVideoPlaying(!isVideoPlaying)}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-bold shadow-md shadow-red-900/40 flex items-center gap-2 shrink-0 transition-transform active:scale-95"
-            >
-              <PlayCircle className="w-4 h-4" />
-              <span>{isVideoPlaying ? "Tạm dừng phát" : "Mở video bài giảng"}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {onOpenPodcast && (
+                <button
+                  onClick={() => onOpenPodcast(lesson.topicId)}
+                  className="px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer hover:scale-105"
+                  title="Nghe Podcast bài giảng tóm tắt 2 phút"
+                >
+                  <Radio className="w-4 h-4 text-amber-400 animate-pulse" />
+                  <span>Nghe Podcast 2 phút</span>
+                </button>
+              )}
+              <button
+                onClick={() => setIsVideoPlaying(!isVideoPlaying)}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-bold shadow-md shadow-red-900/40 flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
+              >
+                <PlayCircle className="w-4 h-4" />
+                <span>{isVideoPlaying ? "Tạm dừng phát" : "Mở video bài giảng"}</span>
+              </button>
+            </div>
           </div>
 
           {isVideoPlaying && (

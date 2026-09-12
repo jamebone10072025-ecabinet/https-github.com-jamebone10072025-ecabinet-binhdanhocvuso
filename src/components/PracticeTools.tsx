@@ -14,13 +14,17 @@ import {
   ExternalLink,
   Loader2,
   Send,
+  Radio,
+  FileCheck,
 } from "lucide-react";
 
 interface PracticeToolsProps {
   onSendToAI: (promptText: string) => void;
+  onOpenDocAI?: () => void;
+  onOpenPodcast?: (topicId?: number) => void;
 }
 
-export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI }) => {
+export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI, onOpenDocAI, onOpenPodcast }) => {
   const [activeSubTool, setActiveSubTool] = useState<"prompt" | "smart" | "gap" | "checklist" | "search">("prompt");
 
   // Prompt Builder State
@@ -125,6 +129,55 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI }) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Featured AI Upgrades Banner */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        {onOpenDocAI && (
+          <div
+            onClick={onOpenDocAI}
+            className="p-4 rounded-2xl bg-gradient-to-br from-red-900 to-rose-950 text-white border border-red-800/40 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group"
+          >
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                <Sparkles className="w-3 h-3" />
+                <span>Multimodal Gemini</span>
+              </div>
+              <h4 className="font-bold text-sm text-white group-hover:text-amber-200 transition-colors">
+                Soát thể thức NĐ 30 & Chẩn đoán ảnh lỗi
+              </h4>
+              <p className="text-xs text-rose-200 line-clamp-2 leading-relaxed">
+                Tải lên bản chụp công văn, ảnh màn hình lỗi Một cửa/VNeID để AI kiểm tra và hướng dẫn sửa ngay.
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-amber-300">
+              <FileCheck className="w-5 h-5" />
+            </div>
+          </div>
+        )}
+
+        {onOpenPodcast && (
+          <div
+            onClick={() => onOpenPodcast(1)}
+            className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-red-950 text-white border border-slate-800 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group"
+          >
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-400/20 text-rose-300 border border-rose-400/30">
+                <Radio className="w-3 h-3 animate-pulse" />
+                <span>Micro-learning TTS</span>
+              </div>
+              <h4 className="font-bold text-sm text-white group-hover:text-rose-200 transition-colors">
+                Podcast 26 Chuyên đề công vụ số
+              </h4>
+              <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                Bản tin âm thanh phát thanh viên 2-3 phút, nghe mọi lúc mọi nơi trên điện thoại và máy tính.
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-rose-300">
+              <Radio className="w-5 h-5" />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Sub-tool Switcher Header */}
       <div className="bg-white rounded-xl border border-slate-200 p-2 shadow-xs flex flex-wrap gap-1 text-xs sm:text-sm font-semibold">
         <button

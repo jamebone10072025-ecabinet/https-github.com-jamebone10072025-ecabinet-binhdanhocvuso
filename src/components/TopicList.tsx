@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, BookOpen, Layers, CheckCircle2, ChevronRight, Sparkles, Shield, Video, FileText, Image as ImageIcon, Play, Info, ExternalLink, Filter } from "lucide-react";
+import { Search, BookOpen, Layers, CheckCircle2, ChevronRight, Sparkles, Shield, Video, FileText, Image as ImageIcon, Play, Info, ExternalLink, Filter, Radio } from "lucide-react";
 import { FULL_TOPIC_LIST, TOPICS_DATA } from "../data/curriculumData";
 import { MASTER_LESSONS_136, PROGRAM_LEVEL_VIDEOS } from "../data/masterLessons136";
 import { Topic, Lesson } from "../types";
@@ -7,9 +7,10 @@ import { useProgress } from "../context/ProgressContext";
 
 interface TopicListProps {
   onSelectLesson: (lesson: Lesson, topic: Topic | typeof FULL_TOPIC_LIST[0]) => void;
+  onOpenPodcast?: (topicId: number) => void;
 }
 
-export const TopicList: React.FC<TopicListProps> = ({ onSelectLesson }) => {
+export const TopicList: React.FC<TopicListProps> = ({ onSelectLesson, onOpenPodcast }) => {
   const { isLessonCompleted, getTopicProgress, toggleLessonCompleted, completedCount, totalLessons, completionPercentage } = useProgress();
   const [viewMode, setViewMode] = useState<"topics" | "master136" | "programVideos">("topics");
   const [searchTerm, setSearchTerm] = useState("");
@@ -311,24 +312,35 @@ export const TopicList: React.FC<TopicListProps> = ({ onSelectLesson }) => {
                 </div>
 
                 {/* Bottom Card Action */}
-                <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="px-5 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 text-xs">
                   {hasInteractiveLessons ? (
                     <button
                       onClick={() => onSelectLesson(detail.lessons[0], detail)}
-                      className="w-full text-center py-1.5 rounded-lg bg-red-700 text-white font-semibold hover:bg-red-800 transition-colors shadow-xs flex items-center justify-center gap-1.5"
+                      className="flex-1 text-center py-1.5 px-2 rounded-lg bg-red-700 text-white font-semibold hover:bg-red-800 transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Học & Làm trắc nghiệm</span>
+                      <span>Học & Trắc nghiệm</span>
                     </button>
                   ) : (
                     <button
                       onClick={() => {
                         handleOpenLessonByIndex(item.id, 1);
                       }}
-                      className="w-full text-center py-1.5 rounded-lg bg-slate-200/80 text-slate-700 font-medium hover:bg-slate-300 transition-colors flex items-center justify-center gap-1"
+                      className="flex-1 text-center py-1.5 px-2 rounded-lg bg-slate-200/80 text-slate-700 font-medium hover:bg-slate-300 transition-colors flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <BookOpen className="w-3.5 h-3.5" />
-                      <span>Tra cứu bài học ({item.lessons} bài)</span>
+                      <span>Tra cứu bài học</span>
+                    </button>
+                  )}
+
+                  {onOpenPodcast && (
+                    <button
+                      onClick={() => onOpenPodcast(item.id)}
+                      className="py-1.5 px-2.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 font-semibold transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                      title="Nghe Podcast 2 phút"
+                    >
+                      <Radio className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                      <span>Podcast</span>
                     </button>
                   )}
                 </div>

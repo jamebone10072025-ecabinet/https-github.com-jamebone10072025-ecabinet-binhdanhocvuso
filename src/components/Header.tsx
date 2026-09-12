@@ -1,10 +1,10 @@
 import React from "react";
-import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw, MapPin } from "lucide-react";
+import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw, MapPin, Radio, FileCheck } from "lucide-react";
 import { useProgress } from "../context/ProgressContext";
 
 interface HeaderProps {
-  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai";
-  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai") => void;
+  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast";
+  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast") => void;
   onOpenLegal: () => void;
 }
 
@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             <button
               id="nav-tab-curriculum"
               onClick={() => setActiveTab("curriculum")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === "curriculum"
                   ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -80,22 +80,49 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             </button>
 
             <button
+              id="nav-tab-podcast"
+              onClick={() => setActiveTab("podcast")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === "podcast"
+                  ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <Radio className="w-4 h-4 text-rose-600 animate-pulse" />
+              <span>Podcast học vụ</span>
+            </button>
+
+            <button
+              id="nav-tab-docai"
+              onClick={() => setActiveTab("docai")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === "docai"
+                  ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <FileCheck className="w-4 h-4 text-amber-600" />
+              <span>Soát văn bản AI</span>
+            </button>
+
+            <button
               id="nav-tab-exam"
               onClick={() => setActiveTab("exam")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === "exam"
                   ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <Award className="w-4 h-4 text-amber-600" />
-              <span>Sát hạch & chứng nhận</span>
+              <span className="hidden xl:inline">Sát hạch & chứng nhận</span>
+              <span className="xl:hidden">Sát hạch</span>
             </button>
 
             <button
               id="nav-tab-tools"
               onClick={() => setActiveTab("tools")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === "tools"
                   ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -108,27 +135,28 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             <button
               id="nav-tab-maps"
               onClick={() => setActiveTab("maps")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === "maps"
                   ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <MapPin className="w-4 h-4 text-rose-600" />
-              <span>Bản đồ số Gia Lai</span>
+              <span className="hidden xl:inline">Bản đồ số Gia Lai</span>
+              <span className="xl:hidden">Bản đồ</span>
             </button>
 
             <button
               id="nav-tab-ai"
               onClick={() => setActiveTab("ai")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === "ai"
                   ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               <Bot className="w-4 h-4 text-emerald-600" />
-              <span>Trợ lý AI học vụ</span>
+              <span>Trợ lý AI</span>
             </button>
 
             <button

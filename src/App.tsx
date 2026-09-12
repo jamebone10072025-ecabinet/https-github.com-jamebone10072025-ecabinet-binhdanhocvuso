@@ -8,14 +8,17 @@ import { PracticeTools } from "./components/PracticeTools";
 import { AiTutor } from "./components/AiTutor";
 import { MapsGroundingAssistant } from "./components/MapsGroundingAssistant";
 import { LegalDocsModal } from "./components/LegalDocsModal";
+import { DocumentIntelligence } from "./components/DocumentIntelligence";
+import { AudioPodcastPlayer } from "./components/AudioPodcastPlayer";
 import { Lesson, Topic } from "./types";
 import { FULL_TOPIC_LIST, TOPICS_DATA } from "./data/curriculumData";
 import { ShieldCheck, BookOpen, ExternalLink, Award, FileText } from "lucide-react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"curriculum" | "exam" | "tools" | "maps" | "legal" | "ai">("curriculum");
+  const [activeTab, setActiveTab] = useState<"curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast">("curriculum");
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic | typeof FULL_TOPIC_LIST[0] | null>(null);
+  const [selectedPodcastTopicId, setSelectedPodcastTopicId] = useState<number>(1);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [aiPromptSeed, setAiPromptSeed] = useState<string>("");
 
@@ -34,6 +37,12 @@ export default function App() {
   const handleSendPromptToAI = (promptText: string) => {
     setAiPromptSeed(promptText);
     setActiveTab("ai");
+  };
+
+  const handleOpenPodcastForTopic = (topicId: number) => {
+    setSelectedPodcastTopicId(topicId);
+    setActiveTab("podcast");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -64,16 +73,37 @@ export default function App() {
                   setSelectedTopic(nextT);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
+                onOpenPodcast={(topicId) => handleOpenPodcastForTopic(topicId)}
               />
             ) : (
-              <TopicList onSelectLesson={handleSelectLesson} />
+              <TopicList
+                onSelectLesson={handleSelectLesson}
+                onOpenPodcast={(topicId) => handleOpenPodcastForTopic(topicId)}
+              />
             )}
           </div>
         )}
 
+        {activeTab === "podcast" && (
+          <AudioPodcastPlayer
+            initialTopicId={selectedPodcastTopicId}
+            onSelectTopic={(id) => setSelectedPodcastTopicId(id)}
+          />
+        )}
+
+        {activeTab === "docai" && (
+          <DocumentIntelligence onSendToAI={handleSendPromptToAI} />
+        )}
+
         {activeTab === "exam" && <ExamCertification />}
 
-        {activeTab === "tools" && <PracticeTools onSendToAI={handleSendPromptToAI} />}
+        {activeTab === "tools" && (
+          <PracticeTools
+            onSendToAI={handleSendPromptToAI}
+            onOpenDocAI={() => setActiveTab("docai")}
+            onOpenPodcast={(topicId) => handleOpenPodcastForTopic(topicId || 1)}
+          />
+        )}
         
         {activeTab === "maps" && <MapsGroundingAssistant />}
 
