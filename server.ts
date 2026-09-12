@@ -49,10 +49,10 @@ function getDomainKnowledgeFallback(prompt: string, contextTopic?: string): stri
   return getSmartTutorResponse(prompt, contextTopic);
 }
 
-// AI Assistant Endpoint for Civil Service Digital Skills Q&A (Multi-turn conversation support)
+// AI Assistant Endpoint for Civil Service Digital Skills Q&A (Multi-turn conversation support with Google Search Grounding)
 app.post("/api/chat", async (req: Request, res: Response) => {
   try {
-    const { message, history, model, role } = req.body;
+    const { message, history, model, role, useSearchGrounding = true } = req.body;
     if (!message || typeof message !== "string") {
       res.status(400).json({ error: "Nội dung tin nhắn không hợp lệ." });
       return;
@@ -61,7 +61,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       const fallbackReply = getSmartTutorResponse(message);
-      res.json({ reply: fallbackReply });
+      res.json({ reply: fallbackReply, sources: [], searchQueries: [], searchGrounded: false });
       return;
     }
 
@@ -92,9 +92,7 @@ Các nguyên tắc cốt lõi bạn PHẢI luôn tuân thủ và nhắc nhở:
 7. Địa phương tỉnh Gia Lai: Tỉnh hiện đã sắp xếp, sáp nhập theo mô hình chính quyền 2 cấp (Tỉnh - Xã/Phường), KHÔNG CÒN CẤP HUYỆN, toàn tỉnh gồm 135 xã/phường (110 xã, 25 phường) trực thuộc tỉnh (sau khi hợp nhất Gia Lai - Bình Định theo Nghị quyết 202/2025/QH15). Mọi thủ tục Một cửa trước đây của cấp huyện nay được chuyển giao phân cấp về Một cửa 135 xã/phường hoặc Cổng DVCQG/VNeID.`;
 
     // Map requested model to recommended valid models
-    // Default: gemini-3.5-flash for general tasks
-    // Fast: gemini-3.1-flash-lite for tasks that should happen fast
-    // Complex: gemini-3.1-pro-preview for particularly complex tasks
+    // When Search Grounding is active, prioritize gemini-3.5-flash with googleSearch tool per specification
     let primaryModel = "gemini-3.5-flash";
     if (model === "gemini-3.1-pro-preview") {
       primaryModel = "gemini-3.1-pro-preview";
@@ -131,25 +129,65 @@ Các nguyên tắc cốt lõi bạn PHẢI luôn tuân thủ và nhắc nhở:
     });
 
     let replyText = "";
+    let sources: Array<{ title: string; uri: string }> = [];
+    let searchQueries: string[] = [];
 
-    for (const modelName of modelsToTry) {
+    // Attempt with Search Grounding using gemini-3.5-flash if enabled
+    if (useSearchGrounding) {
       try {
         const response = await ai.models.generateContent({
-          model: modelName,
+          model: "gemini-3.5-flash",
           contents,
           config: {
             systemInstruction,
             temperature: 0.7,
+            tools: [{ googleSearch: {} }],
           },
         });
 
         if (response.text) {
           replyText = response.text;
-          break;
+          const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+          const chunks = groundingMetadata?.groundingChunks;
+          if (Array.isArray(chunks)) {
+            sources = chunks
+              .filter((c: any) => c.web && c.web.uri)
+              .map((c: any) => ({
+                title: c.web.title || c.web.uri,
+                uri: c.web.uri,
+              }));
+          }
+          if (Array.isArray(groundingMetadata?.webSearchQueries)) {
+            searchQueries = groundingMetadata.webSearchQueries;
+          }
         }
       } catch (err: any) {
         const msg = String(err?.message || "");
-        console.warn(`[Gemini API] Multi-turn model ${modelName} error: ${msg.slice(0, 100)}`);
+        console.warn(`[Gemini API] Search Grounding with gemini-3.5-flash notice: ${msg.slice(0, 100)}`);
+      }
+    }
+
+    // Fallback through candidate models if search grounding didn't yield response
+    if (!replyText) {
+      for (const modelName of modelsToTry) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents,
+            config: {
+              systemInstruction,
+              temperature: 0.7,
+            },
+          });
+
+          if (response.text) {
+            replyText = response.text;
+            break;
+          }
+        } catch (err: any) {
+          const msg = String(err?.message || "");
+          console.warn(`[Gemini API] Multi-turn model ${modelName} error: ${msg.slice(0, 100)}`);
+        }
       }
     }
 
@@ -158,11 +196,78 @@ Các nguyên tắc cốt lõi bạn PHẢI luôn tuân thủ và nhắc nhở:
       replyText = getDomainKnowledgeFallback(message);
     }
 
-    res.json({ reply: replyText });
+    res.json({
+      reply: replyText,
+      sources,
+      searchQueries,
+      searchGrounded: sources.length > 0 || searchQueries.length > 0,
+    });
   } catch (error: any) {
     console.error("AI Error:", error);
     const safeFallback = getDomainKnowledgeFallback(req.body?.message || "");
-    res.json({ reply: safeFallback });
+    res.json({ reply: safeFallback, sources: [], searchQueries: [], searchGrounded: false });
+  }
+});
+
+// Dedicated Google Search Grounding Endpoint using gemini-3.5-flash
+app.post("/api/search-grounding", async (req: Request, res: Response) => {
+  try {
+    const { query } = req.body;
+    if (!query || typeof query !== "string") {
+      res.status(400).json({ error: "Yêu cầu cung cấp nội dung tra cứu." });
+      return;
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      res.json({
+        reply: "Hệ thống đang hoạt động ở chế độ cơ sở dữ liệu ngoại tuyến. Để tra cứu dữ liệu thời gian thực qua Google Search, cần kết nối Gemini API.",
+        sources: [],
+        searchQueries: [],
+        searchGrounded: false,
+      });
+      return;
+    }
+
+    const ai = getAIClient();
+    const systemInstruction = `Bạn là Trợ lý Tra cứu Pháp lý & Thông tin Công vụ Thời gian thực thuộc Chương trình Bình dân học vụ số tỉnh Gia Lai (Nghị quyết số 398/NQ-UBTVQH16).
+Nhiệm vụ của bạn là sử dụng dữ liệu từ Google Search để cung cấp thông tin cập nhật, chính xác, khách quan nhất về:
+- Các văn bản quy phạm pháp luật, nghị quyết của Quốc hội, nghị định của Chính phủ, quyết định của Thủ tướng và UBND tỉnh Gia Lai mới nhất (đặc biệt về mô hình chính quyền 2 cấp tỉnh Gia Lai với 135 xã/phường, Đề án 06, VNeID, Cổng DVCQG theo Nghị định 118/2025/NĐ-CP).
+- Các hướng dẫn, cảnh báo an toàn thông tin, phòng chống lừa đảo trực tuyến, sử dụng AI an toàn theo Luật Trí tuệ nhân tạo 2025 và Luật Bảo vệ dữ liệu cá nhân 2025.
+- Trích dẫn rõ ràng tên văn bản, cơ quan ban hành, ngày có hiệu lực và các nội dung cốt lõi.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: query,
+      config: {
+        systemInstruction,
+        tools: [{ googleSearch: {} }],
+        temperature: 0.5,
+      },
+    });
+
+    const reply = response.text || "";
+    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+    const chunks = groundingMetadata?.groundingChunks || [];
+    const sources = chunks
+      .filter((c: any) => c.web?.uri)
+      .map((c: any) => ({
+        title: c.web?.title || c.web?.uri,
+        uri: c.web?.uri,
+      }));
+    const searchQueries = groundingMetadata?.webSearchQueries || [];
+
+    res.json({
+      reply,
+      sources,
+      searchQueries,
+      searchGrounded: sources.length > 0 || searchQueries.length > 0,
+    });
+  } catch (error: any) {
+    console.error("Search Grounding Error:", error);
+    res.status(500).json({
+      error: "Không thể tra cứu Google Search vào thời điểm này: " + (error?.message || "Lỗi máy chủ"),
+    });
   }
 });
 

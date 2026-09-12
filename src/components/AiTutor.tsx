@@ -12,8 +12,16 @@ import {
   Zap,
   Trash2,
   SlidersHorizontal,
+  Globe,
+  ExternalLink,
+  Search,
 } from "lucide-react";
 import { getSmartTutorResponse } from "../data/aiKnowledgeBase";
+
+export interface ChatSource {
+  title: string;
+  uri: string;
+}
 
 export interface ChatMessage {
   id: string;
@@ -21,6 +29,9 @@ export interface ChatMessage {
   content: string;
   time: string;
   modelUsed?: string;
+  sources?: ChatSource[];
+  searchQueries?: string[];
+  searchGrounded?: boolean;
 }
 
 export type ChatRoleType = "hoc_vu_tong_hop" | "an_toan_thong_tin" | "phap_ly_cong_vu";
@@ -36,8 +47,9 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
       id: "intro-1",
       role: "assistant",
       content:
-        "Kính chào Quý Anh/Chị! Tôi là Trợ lý Cố vấn Học vụ Số (tích hợp công nghệ Gemini đa lượt hội thoại). Tôi có thể nhớ lịch sử trao đổi, hỗ trợ giải đáp 26 chuyên đề kỹ năng số, an toàn thông tin, bảo vệ dữ liệu cá nhân theo Luật mới và mô hình chính quyền 2 cấp tỉnh Gia Lai (135 xã/phường). Xin mời Quý Anh/Chị gửi câu hỏi!",
+        "Kính chào Quý Anh/Chị! Tôi là Trợ lý Cố vấn Học vụ Số (tích hợp công nghệ Gemini 3.5 Flash với Google Search Grounding). Tôi có khả năng truy vấn dữ liệu web thời gian thực để cung cấp thông tin, văn bản pháp lý và hướng dẫn kỹ năng số mới nhất, bảo vệ dữ liệu cá nhân theo Luật mới và mô hình chính quyền 2 cấp tỉnh Gia Lai (135 xã/phường). Xin mời Quý Anh/Chị gửi câu hỏi!",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      searchGrounded: true,
     },
   ]);
 
@@ -48,11 +60,13 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
   // Custom chatbot role
   const [selectedRole, setSelectedRole] = useState<ChatRoleType>("hoc_vu_tong_hop");
   // Gemini model selection per requirements:
-  // - gemini-3.5-flash: General tasks (default)
+  // - gemini-3.5-flash: General tasks & Search Grounding (default)
   // - gemini-3.1-flash-lite: Fast response tasks
   // - gemini-3.1-pro-preview: Particularly complex reasoning / legal tasks
   const [selectedModel, setSelectedModel] = useState<GeminiModelChoice>("gemini-3.5-flash");
   const [showConfig, setShowConfig] = useState(false);
+  // Google Search Grounding toggle (default true to provide up-to-date accurate info)
+  const [useSearchGrounding, setUseSearchGrounding] = useState<boolean>(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -68,12 +82,12 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
   }, [messages, loading]);
 
   const quickQuestions = [
-    "Mô hình chính quyền 2 cấp tỉnh Gia Lai (bỏ cấp huyện, 135 xã phường) vận hành thế nào?",
+    "Quy định mới nhất về sắp xếp chính quyền 2 cấp tỉnh Gia Lai (bỏ cấp huyện, 135 xã phường)",
     "Giải thích nguyên tắc 'Dữ liệu nào, công cụ đó' theo Luật AI 2025",
-    "Cách nhận diện và xử lý cuộc gọi video lừa đảo Deepfake",
-    "Quy tắc sao lưu 3-2-1 và cách bảo vệ tài liệu mật",
+    "Cách nhận diện và xử lý cuộc gọi video lừa đảo Deepfake mới nhất",
+    "Quy tắc sao lưu 3-2-1 và cách bảo vệ tài liệu mật nội bộ",
     "Mức phạt vi phạm dữ liệu cá nhân theo Luật số 91/2025/QH15",
-    "Học 26 chuyên đề Bình dân học vụ số theo lộ trình nào hiệu quả nhất?",
+    "Quy trình nộp hồ sơ trực tuyến qua Cổng DVCQG theo Nghị định 118/2025/NĐ-CP",
   ];
 
   const handleSend = async (textToSend?: string) => {
@@ -109,6 +123,7 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
           history: historyPayload,
           model: selectedModel,
           role: selectedRole,
+          useSearchGrounding,
         }),
       });
 
@@ -122,7 +137,10 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
               role: "assistant",
               content: data.reply,
               time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-              modelUsed: selectedModel,
+              modelUsed: useSearchGrounding ? "gemini-3.5-flash (Google Search)" : selectedModel,
+              sources: data.sources || [],
+              searchQueries: data.searchQueries || [],
+              searchGrounded: Boolean(data.searchGrounded),
             },
           ]);
           return;
@@ -170,7 +188,7 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
         id: "intro-reset",
         role: "assistant",
         content:
-          "Hội thoại đã được làm mới. Tôi sẵn sàng hỗ trợ Quý Anh/Chị các câu hỏi mới về chương trình Bình dân học vụ số và công vụ tỉnh Gia Lai!",
+          "Hội thoại đã được làm mới. Tôi sẵn sàng hỗ trợ Quý Anh/Chị tra cứu văn bản và thông tin mới nhất từ Google Search và cơ sở dữ liệu học vụ số!",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
@@ -185,21 +203,40 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
             <Bot className="w-6 h-6 text-amber-300" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-bold text-slate-900 text-base sm:text-lg">
-                Trợ lý Cố vấn Học vụ Số (Gemini AI Multi-turn)
+                Trợ lý Cố vấn Học vụ Số (Gemini 3.5 Flash)
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                Đa lượt
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                <Globe className="w-3 h-3 text-blue-600" />
+                <span>Google Search Grounding</span>
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              Ghi nhớ ngữ cảnh trao đổi liên tục • Hỗ trợ 26 chuyên đề, Luật mới & Mô hình 135 xã/phường Gia Lai
+              Tra cứu dữ liệu thời gian thực từ Google Search • Hỗ trợ 26 chuyên đề, Nghị định 118/2025 & Mô hình 135 xã/phường Gia Lai
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+          {/* Quick Toggle Google Search Grounding */}
+          <button
+            type="button"
+            onClick={() => setUseSearchGrounding(!useSearchGrounding)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all ${
+              useSearchGrounding
+                ? "bg-blue-50 border-blue-300 text-blue-800 shadow-2xs"
+                : "bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-700"
+            }`}
+            title="Bật/Tắt tìm kiếm Google thời gian thực"
+          >
+            <Search className={`w-3.5 h-3.5 ${useSearchGrounding ? "text-blue-600" : "text-slate-400"}`} />
+            <span className="hidden sm:inline">Search Grounding:</span>
+            <span className={useSearchGrounding ? "text-blue-700 font-bold" : "text-slate-500"}>
+              {useSearchGrounding ? "BẬT" : "TẮT"}
+            </span>
+          </button>
+
           <button
             onClick={() => setShowConfig(!showConfig)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
@@ -296,7 +333,7 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
                   }`}
                 >
                   <span className="block truncate">3.5 Flash</span>
-                  <span className="text-[10px] text-slate-400 font-normal block truncate">Đa năng tiêu chuẩn</span>
+                  <span className="text-[10px] text-blue-600 font-semibold block truncate">Google Search</span>
                 </button>
 
                 <button
@@ -332,14 +369,15 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
 
       {/* Suggested Quick Questions */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
-        <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider shrink-0 mr-1">
-          Gợi ý hỏi nhanh:
+        <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+          <Globe className="w-3 h-3 text-blue-600" />
+          <span>Hỏi nhanh:</span>
         </span>
         {quickQuestions.map((q, idx) => (
           <button
             key={idx}
             onClick={() => handleSend(q)}
-            className="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-red-300 hover:text-red-700 whitespace-nowrap transition-all shadow-2xs cursor-pointer"
+            className="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-red-300 hover:text-red-700 whitespace-nowrap transition-all shadow-2xs cursor-pointer text-xs"
           >
             {q}
           </button>
@@ -355,7 +393,7 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
             return (
               <div
                 key={m.id}
-                className={`flex gap-3 max-w-[90%] sm:max-w-[85%] ${
+                className={`flex gap-3 max-w-[92%] sm:max-w-[85%] ${
                   isUser ? "ml-auto flex-row-reverse" : "mr-auto"
                 }`}
               >
@@ -368,13 +406,79 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
                 </div>
 
                 <div
-                  className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed space-y-2 relative group ${
+                  className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed space-y-3 relative group ${
                     isUser
                       ? "bg-slate-900 text-white rounded-tr-none shadow-sm"
                       : "bg-slate-50 border border-slate-200/90 text-slate-800 rounded-tl-none shadow-2xs"
                   }`}
                 >
+                  {/* Google Search Grounding Indicator Pill */}
+                  {!isUser && m.searchGrounded && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200/80 text-blue-800 text-[11px] font-semibold">
+                      <Globe className="w-3 h-3 text-blue-600" />
+                      <span>Xác thực qua Google Search Grounding</span>
+                    </div>
+                  )}
+
                   <div className="whitespace-pre-wrap">{m.content}</div>
+
+                  {/* Web Search Queries executed by Gemini */}
+                  {!isUser && m.searchQueries && m.searchQueries.length > 0 && (
+                    <div className="pt-2 border-t border-slate-200/80 space-y-1.5">
+                      <div className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
+                        <Search className="w-3 h-3 text-slate-500" />
+                        <span>Từ khóa truy vấn Google:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {m.searchQueries.map((queryText, qIdx) => (
+                          <span
+                            key={qIdx}
+                            className="px-2 py-0.5 rounded bg-slate-200/70 text-slate-700 text-[10px] font-mono"
+                          >
+                            "{queryText}"
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grounding Sources / Chunks */}
+                  {!isUser && m.sources && m.sources.length > 0 && (
+                    <div className="pt-2 border-t border-slate-200/80 space-y-2">
+                      <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Nguồn trích dẫn trực tuyến ({m.sources.length}):</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {m.sources.map((src, sIdx) => {
+                          let hostname = "";
+                          try {
+                            hostname = new URL(src.uri).hostname.replace("www.", "");
+                          } catch {
+                            hostname = "trực tuyến";
+                          }
+
+                          return (
+                            <a
+                              key={sIdx}
+                              href={src.uri}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-lg bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all flex items-start justify-between gap-1.5 text-[11px] text-slate-700 group/link"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-blue-900 group-hover/link:underline truncate">
+                                  {src.title || "Tài liệu trực tuyến"}
+                                </div>
+                                <div className="text-[10px] text-slate-400 truncate">{hostname}</div>
+                              </div>
+                              <ExternalLink className="w-3 h-3 text-slate-400 group-hover/link:text-blue-600 shrink-0 mt-0.5" />
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between gap-4 text-[10px] opacity-60 pt-1 border-t border-black/5">
                     <div className="flex items-center gap-2">
@@ -405,9 +509,12 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
           })}
 
           {loading && (
-            <div className="flex items-center gap-3 text-xs text-slate-600 italic p-3 bg-red-50/60 rounded-xl max-w-sm border border-red-100 animate-pulse">
-              <RefreshCw className="w-4 h-4 animate-spin text-red-600" />
-              <span>Trợ lý Gemini đang phân tích ngữ cảnh hội thoại...</span>
+            <div className="flex items-center gap-3 text-xs text-slate-600 italic p-3 bg-blue-50/70 rounded-xl max-w-md border border-blue-200 animate-pulse">
+              <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+              <div>
+                <p className="font-semibold text-blue-900 not-italic">Đang tra cứu dữ liệu thời gian thực với Google Search...</p>
+                <p className="text-[11px] text-blue-700">Mô hình gemini-3.5-flash đang tổng hợp và trích dẫn thông tin cập nhật.</p>
+              </div>
             </div>
           )}
 
@@ -428,7 +535,7 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Nhập câu hỏi tiếp nối (AI nhớ lịch sử trao đổi bên trên)..."
+              placeholder="Nhập câu hỏi tra cứu chính sách, nghị định, kỹ năng số (hỗ trợ Google Search)..."
               className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm text-slate-800 outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600 shadow-2xs"
             />
             <button
@@ -443,8 +550,11 @@ export const AiTutor: React.FC<AiTutorProps> = ({ initialPrompt }) => {
           </form>
 
           <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400 pt-2">
-            <span>
-              Chế độ: <strong>{selectedRole === "hoc_vu_tong_hop" ? "Học vụ tổng hợp" : selectedRole === "an_toan_thong_tin" ? "An toàn thông tin" : "Pháp lý & 2 cấp"}</strong> • Mô hình: <strong>{selectedModel}</strong>
+            <span className="flex items-center gap-1.5">
+              <Globe className="w-3 h-3 text-blue-600" />
+              <span>
+                Search Grounding: <strong className={useSearchGrounding ? "text-blue-700" : "text-slate-500"}>{useSearchGrounding ? "Đang bật (gemini-3.5-flash)" : "Tắt"}</strong> • Vai trò: <strong>{selectedRole === "hoc_vu_tong_hop" ? "Học vụ tổng hợp" : selectedRole === "an_toan_thong_tin" ? "An toàn thông tin" : "Pháp lý & 2 cấp"}</strong>
+              </span>
             </span>
             <span>Nguyên tắc: AI làm nhanh, con người làm chuẩn</span>
           </div>

@@ -1,18 +1,89 @@
 import React, { useState } from "react";
-import { Sparkles, Copy, Check, Target, Gauge, ShieldAlert, FileText, CheckCircle2, ArrowRight } from "lucide-react";
+import {
+  Sparkles,
+  Copy,
+  Check,
+  Target,
+  Gauge,
+  ShieldAlert,
+  FileText,
+  CheckCircle2,
+  ArrowRight,
+  Globe,
+  Search,
+  ExternalLink,
+  Loader2,
+  Send,
+} from "lucide-react";
 
 interface PracticeToolsProps {
   onSendToAI: (promptText: string) => void;
 }
 
 export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI }) => {
-  const [activeSubTool, setActiveSubTool] = useState<"prompt" | "smart" | "gap" | "checklist">("prompt");
+  const [activeSubTool, setActiveSubTool] = useState<"prompt" | "smart" | "gap" | "checklist" | "search">("prompt");
 
   // Prompt Builder State
   const [role, setRole] = useState("Chuyên viên hành chính");
   const [task, setTask] = useState("soạn thảo thông báo mời họp về triển khai phong trào Bình dân học vụ số tại đơn vị");
   const [style, setStyle] = useState("văn phong trang trọng, súc tích, đúng thể thức văn bản hành chính, khoảng 200 chữ");
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+  // Search Grounding State
+  const [searchQuery, setSearchQuery] = useState("Nghị định 118/2025/NĐ-CP về một cửa số duy nhất Cổng DVCQG");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResult, setSearchResult] = useState<string | null>(null);
+  const [searchSources, setSearchSources] = useState<Array<{ title: string; uri: string }>>([]);
+  const [searchQueriesUsed, setSearchQueriesUsed] = useState<string[]>([]);
+  const [searchCopied, setSearchCopied] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const searchPresets = [
+    "Nghị định 118/2025/NĐ-CP về điểm tiếp nhận một cửa số duy nhất Cổng DVCQG",
+    "Mô hình chính quyền địa phương 2 cấp tỉnh Gia Lai năm 2026 (135 xã phường)",
+    "Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15 hiệu lực từ 01/01/2026",
+    "Luật Trí tuệ nhân tạo 134/2025/QH15 và trách nhiệm cán bộ công chức",
+    "Hướng dẫn xử lý các hình thức lừa đảo Deepfake trực tuyến năm 2026",
+  ];
+
+  const handleRunSearchGrounding = async (queryToRun?: string) => {
+    const q = (queryToRun || searchQuery).trim();
+    if (!q || searchLoading) return;
+
+    setSearchLoading(true);
+    setSearchError(null);
+    setSearchResult(null);
+    setSearchSources([]);
+    setSearchQueriesUsed([]);
+
+    try {
+      const res = await fetch("/api/search-grounding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Máy chủ phản hồi mã lỗi ${res.status}`);
+      }
+
+      const data = await res.json();
+      setSearchResult(data.answer || "Không nhận được phản hồi từ mô hình.");
+      setSearchSources(data.sources || []);
+      setSearchQueriesUsed(data.searchQueries || []);
+    } catch (err: any) {
+      setSearchError(err?.message || "Lỗi kết nối khi tra cứu Google Search.");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleCopySearchResult = () => {
+    if (!searchResult) return;
+    navigator.clipboard.writeText(searchResult);
+    setSearchCopied(true);
+    setTimeout(() => setSearchCopied(false), 2000);
+  };
 
   const generatedPrompt = `Hãy đóng vai là một ${role} trong cơ quan nhà nước. Nhiệm vụ của bạn là: ${task}. Yêu cầu về hình thức: ${style}. Lưu ý nguyên tắc an toàn: Không đưa thông tin mật, số liệu nội bộ chưa công bố hay thông tin cá nhân của người dân vào bài viết; chỉ sử dụng thông tin công khai hoặc dữ liệu giả định minh họa.`;
 
@@ -102,6 +173,18 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI }) => {
         >
           <ShieldAlert className="w-4 h-4" />
           <span>Rà soát an toàn dữ liệu</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTool("search")}
+          className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-lg flex items-center justify-center gap-2 transition-all ${
+            activeSubTool === "search"
+              ? "bg-blue-700 text-white shadow-xs"
+              : "text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          <Globe className="w-4 h-4 text-blue-300" />
+          <span>Google Search Grounding</span>
         </button>
       </div>
 
@@ -485,6 +568,207 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI }) => {
           <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
             <strong>Ghi nhớ:</strong> Khi chưa chắc chắn về mức độ nhạy cảm của tài liệu, hãy chậm lại một nhịp để xin ý kiến phụ trách phòng. Một phút cẩn trọng bảo vệ uy tín của cả cơ quan!
           </div>
+        </div>
+      )}
+
+      {/* TOOL 5: REAL-TIME SEARCH GROUNDING (gemini-3.5-flash with googleSearch tool) */}
+      {activeSubTool === "search" && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 uppercase tracking-wide">
+              <Globe className="w-3.5 h-3.5 text-blue-600" />
+              <span>Tra cứu Google Search Grounding thời gian thực • Gemini 3.5 Flash</span>
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">
+              Công cụ tra cứu chính sách, nghị định & kỹ năng số mới nhất
+            </h3>
+            <p className="text-xs text-slate-500">
+              Sử dụng mô hình <strong>gemini-3.5-flash</strong> tích hợp công cụ tìm kiếm <strong>googleSearch</strong> để kết nối dữ liệu mạng Internet trực tiếp, tự động tổng hợp câu trả lời chính xác kèm nguồn trích dẫn pháp lý và tin tức cập nhật.
+            </p>
+          </div>
+
+          {/* Quick preset chips */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Gợi ý chủ đề tra cứu phổ biến:</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {searchPresets.map((preset, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setSearchQuery(preset);
+                    handleRunSearchGrounding(preset);
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 text-xs transition-colors cursor-pointer text-left"
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search Input Box */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleRunSearchGrounding();
+                  }}
+                  placeholder="Nhập nội dung cần tra cứu chính sách, hướng dẫn kỹ năng số..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm text-slate-900 font-medium outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
+                />
+              </div>
+
+              <button
+                onClick={() => handleRunSearchGrounding()}
+                disabled={!searchQuery.trim() || searchLoading}
+                className="px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer shrink-0"
+              >
+                {searchLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Đang tìm kiếm...</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-4 h-4" />
+                    <span>Tra cứu Google</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Search Loading State */}
+          {searchLoading && (
+            <div className="p-6 rounded-2xl bg-blue-50/70 border border-blue-200 text-blue-900 flex items-center gap-4 animate-pulse">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-600 shrink-0" />
+              <div>
+                <h4 className="font-bold text-sm">Đang truy vấn Google Search qua Gemini 3.5 Flash...</h4>
+                <p className="text-xs text-blue-700">Hệ thống đang đối chiếu các nguồn trang điện tử chính thống của Chính phủ, Bộ TT&TT và tỉnh Gia Lai.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Search Error State */}
+          {searchError && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
+              {searchError}
+            </div>
+          )}
+
+          {/* Search Result Display */}
+          {searchResult && (
+            <div className="space-y-4 pt-2">
+              <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 shadow-2xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-md bg-blue-100 text-blue-900 font-bold text-xs flex items-center gap-1.5 border border-blue-300">
+                      <Globe className="w-3.5 h-3.5 text-blue-700" />
+                      <span>Kết quả từ Google Search Grounding</span>
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-medium">gemini-3.5-flash</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleCopySearchResult}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      {searchCopied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-emerald-700">Đã chép</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Sao chép kết quả</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => onSendToAI(`Hãy giải thích chi tiết hơn về kết quả tra cứu: ${searchQuery}`)}
+                      className="px-2.5 py-1.5 rounded-lg bg-red-700 hover:bg-red-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span>Trao đổi với Trợ lý AI</span>
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Text Content */}
+                <div className="whitespace-pre-wrap text-slate-800 text-xs sm:text-sm leading-relaxed">
+                  {searchResult}
+                </div>
+
+                {/* Queries Used */}
+                {searchQueriesUsed.length > 0 && (
+                  <div className="pt-3 border-t border-slate-200 space-y-1.5">
+                    <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Search className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Các truy vấn tìm kiếm đã thực hiện:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {searchQueriesUsed.map((q, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-mono"
+                        >
+                          "{q}"
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sources List */}
+                {searchSources.length > 0 && (
+                  <div className="pt-3 border-t border-slate-200 space-y-2">
+                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Các nguồn trích dẫn tham chiếu trực tuyến ({searchSources.length}):</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {searchSources.map((source, sIdx) => {
+                        let hostname = "";
+                        try {
+                          hostname = new URL(source.uri).hostname.replace("www.", "");
+                        } catch {
+                          hostname = "Nguồn tin";
+                        }
+                        return (
+                          <a
+                            key={sIdx}
+                            href={source.uri}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all flex items-start justify-between gap-2 text-xs text-slate-700 group"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-blue-900 group-hover:underline truncate">
+                                {source.title || "Tài liệu trực tuyến"}
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate">{hostname}</div>
+                            </div>
+                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0 mt-0.5" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

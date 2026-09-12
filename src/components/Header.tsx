@@ -11,7 +11,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenLegal }) => {
   const { completedCount, totalLessons, completionPercentage, resetAllProgress } = useProgress();
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-xs">
+    <header className="relative z-40 bg-white border-b border-slate-200 shadow-xs">
       {/* Top red-gold identification bar */}
       <div className="bg-gradient-to-r from-red-900 via-rose-900 to-red-950 text-white px-3 sm:px-8 py-3.5 sm:py-6 lg:py-7 flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 border-b-2 border-amber-400/40 shadow-md">
         <div className="flex items-center gap-2.5 sm:gap-4">
