@@ -5,13 +5,14 @@ import { LessonDetail } from "./components/LessonDetail";
 import { ExamCertification } from "./components/ExamCertification";
 import { PracticeTools } from "./components/PracticeTools";
 import { AiTutor } from "./components/AiTutor";
+import { MapsGroundingAssistant } from "./components/MapsGroundingAssistant";
 import { LegalDocsModal } from "./components/LegalDocsModal";
 import { Lesson, Topic } from "./types";
 import { FULL_TOPIC_LIST, TOPICS_DATA } from "./data/curriculumData";
 import { ShieldCheck, BookOpen, ExternalLink, Award, FileText } from "lucide-react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"curriculum" | "exam" | "tools" | "legal" | "ai">("curriculum");
+  const [activeTab, setActiveTab] = useState<"curriculum" | "exam" | "tools" | "maps" | "legal" | "ai">("curriculum");
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic | typeof FULL_TOPIC_LIST[0] | null>(null);
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
@@ -72,6 +73,8 @@ export default function App() {
         {activeTab === "exam" && <ExamCertification />}
 
         {activeTab === "tools" && <PracticeTools onSendToAI={handleSendPromptToAI} />}
+        
+        {activeTab === "maps" && <MapsGroundingAssistant />}
 
         {activeTab === "ai" && <AiTutor initialPrompt={aiPromptSeed} />}
       </main>
@@ -141,7 +144,6 @@ export default function App() {
               <div className="text-white font-bold">Chủ biên & Ban biên soạn</div>
               <div>Chủ biên: TS. Trần Văn Khải (Phó Chủ nhiệm Ủy ban KH, CN & MT)</div>
               <div>Tổng biên tập: TS. Trần Văn Khải</div>
-              <div>Quyết định ban hành số 757/QĐ-BKHCN</div>
               <div className="text-slate-500 pt-1">
                 Bảo vệ bản quyền theo quy định pháp luật. Tích hợp AI Gemini phục vụ nghiên cứu và học tập số.
               </div>

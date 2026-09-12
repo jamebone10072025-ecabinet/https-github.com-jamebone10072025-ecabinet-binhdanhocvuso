@@ -1,10 +1,10 @@
 import React from "react";
-import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw } from "lucide-react";
+import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw, MapPin } from "lucide-react";
 import { useProgress } from "../context/ProgressContext";
 
 interface HeaderProps {
-  activeTab: "curriculum" | "exam" | "tools" | "legal" | "ai";
-  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "legal" | "ai") => void;
+  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai";
+  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai") => void;
   onOpenLegal: () => void;
 }
 
@@ -106,6 +106,19 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             </button>
 
             <button
+              id="nav-tab-maps"
+              onClick={() => setActiveTab("maps")}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === "maps"
+                  ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <MapPin className="w-4 h-4 text-rose-600" />
+              <span>Bản đồ số Gia Lai</span>
+            </button>
+
+            <button
               id="nav-tab-ai"
               onClick={() => setActiveTab("ai")}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
@@ -157,6 +170,14 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             }`}
           >
             Công cụ số
+          </button>
+          <button
+            onClick={() => setActiveTab("maps")}
+            className={`px-3 py-1.5 rounded-md font-medium whitespace-nowrap ${
+              activeTab === "maps" ? "bg-red-700 text-white" : "bg-slate-100 text-slate-700"
+            }`}
+          >
+            Bản đồ số
           </button>
           <button
             onClick={() => setActiveTab("ai")}

@@ -1,7 +1,7 @@
 {
   "name": "Bình dân học vụ số tỉnh Gia Lai",
-  "description": "Nền tảng học tập, tra cứu và sát hạch kiến thức, kỹ năng số cơ bản Micro-learning dành cho cán bộ, công chức, viên chức khối cơ quan nhà nước tỉnh Gia Lai.",
-  "requestFramePermissions": [],
+  "description": "Nền tảng học tập, tra cứu và sát hạch kiến thức, kỹ năng số cơ bản Micro-learning dành cho cán bộ, công chức, viên chức khối cơ quan nhà nước tỉnh Gia Lai tích hợp trợ lý bản đồ số Maps Grounding.",
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
 

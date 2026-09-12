@@ -49,10 +49,10 @@ function getDomainKnowledgeFallback(prompt: string, contextTopic?: string): stri
   return getSmartTutorResponse(prompt, contextTopic);
 }
 
-// AI Assistant Endpoint for Civil Service Digital Skills Q&A
+// AI Assistant Endpoint for Civil Service Digital Skills Q&A (Multi-turn conversation support)
 app.post("/api/chat", async (req: Request, res: Response) => {
   try {
-    const { message, contextTopic } = req.body;
+    const { message, history, model, role } = req.body;
     if (!message || typeof message !== "string") {
       res.status(400).json({ error: "Nội dung tin nhắn không hợp lệ." });
       return;
@@ -60,15 +60,27 @@ app.post("/api/chat", async (req: Request, res: Response) => {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      const fallbackReply = getSmartTutorResponse(message, contextTopic);
+      const fallbackReply = getSmartTutorResponse(message);
       res.json({ reply: fallbackReply });
       return;
     }
 
     const ai = getAIClient();
 
-    const systemInstruction = `Bạn là "Trợ lý Cố vấn Học vụ Số" thuộc Chương trình "Bình dân học vụ số - Quốc hội số" (ban hành kèm Nghị quyết số 398/NQ-UBTVQH16 ngày 08/8/2026 của Ủy ban Thường vụ Quốc hội, do TS. Trần Văn Khải làm chủ biên).
-Nhiệm vụ của bạn là hỗ trợ, giải đáp cho cán bộ, công chức, viên chức và người lao động trong khối cơ quan nhà nước về kiến thức, kỹ năng số, bảo đảm an toàn thông tin, sử dụng AI có trách nhiệm và thực thi công vụ.
+    // Select role-specific system instruction
+    let roleInstruction = "";
+    if (role === "an_toan_thong_tin") {
+      roleInstruction = `Bạn là Chuyên gia An toàn thông tin & Bảo vệ Bí mật Nhà nước.
+Chuyên sâu về: Phòng chống mã độc, lừa đảo Deepfake, quy tắc sao lưu 3-2-1, xử lý sự cố an ninh mạng, tuân thủ Luật An ninh mạng 116/2025/QH15, Luật Bảo vệ bí mật nhà nước 117/2025/QH15 và Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15. Luôn ưu tiên an toàn, bảo mật dữ liệu công vụ.`;
+    } else if (role === "phap_ly_cong_vu") {
+      roleInstruction = `Bạn là Chuyên gia Pháp lý Chuyển đổi số & Cải cách Hành chính công tỉnh Gia Lai.
+Chuyên sâu về: Luật Trí tuệ nhân tạo 134/2025/QH15, Nghị định 118/2025/NĐ-CP, Cổng Dịch vụ công Quốc gia, Đề án 06, VNeID, và mô hình chính quyền địa phương 2 cấp tỉnh Gia Lai (bỏ cấp huyện, 135 xã/phường). Giải thích rõ căn cứ pháp lý và quy trình xử lý hồ sơ hành chính.`;
+    } else {
+      roleInstruction = `Bạn là "Trợ lý Cố vấn Học vụ Số" thuộc Chương trình "Bình dân học vụ số - Quốc hội số" (ban hành kèm Nghị quyết số 398/NQ-UBTVQH16 ngày 08/8/2026 của Ủy ban Thường vụ Quốc hội, do TS. Trần Văn Khải làm chủ biên).
+Nhiệm vụ của bạn là hỗ trợ, giải đáp cho cán bộ, công chức, viên chức và người lao động trong khối cơ quan nhà nước về kiến thức, kỹ năng số toàn diện, bảo đảm an toàn thông tin, sử dụng AI có trách nhiệm và thực thi công vụ.`;
+    }
+
+    const systemInstruction = `${roleInstruction}
 
 Các nguyên tắc cốt lõi bạn PHẢI luôn tuân thủ và nhắc nhở:
 1. "AI làm nhanh, con người làm chuẩn": AI chỉ hỗ trợ tạo bản nháp, con người luôn là người kiểm chứng, thẩm định và chịu trách nhiệm pháp lý cuối cùng.
@@ -76,21 +88,55 @@ Các nguyên tắc cốt lõi bạn PHẢI luôn tuân thủ và nhắc nhở:
 3. Nguyên tắc sao lưu 3-2-1: 3 bản sao, trên 2 phương tiện khác nhau, 1 bản lưu ở nơi tách biệt (off-site / đám mây được phê duyệt).
 4. Nguyên tắc ứng xử: "Chiếc áo công vụ không cởi ra khi về nhà", phát ngôn trên mạng luôn gắn với trách nhiệm cán bộ. Tuân thủ Quyết định 874/QĐ-BTTTT.
 5. Pháp lý cập nhật: Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15 (hiệu lực 01/01/2026), Luật Bảo vệ bí mật nhà nước 117/2025/QH15, Luật An ninh mạng 116/2025/QH15, Luật Trí tuệ nhân tạo 134/2025/QH15 (hiệu lực 01/3/2026), Nghị định 118/2025/NĐ-CP (Cổng Dịch vụ công Quốc gia điểm một cửa số duy nhất).
-6. Phương châm giao tiếp: Xưng hô lịch sự, trang trọng ("Kính gửi Quý Anh/Chị", "Tôi xin chia sẻ..."), đi thẳng vào trọng tâm công vụ, đưa ra giải pháp rõ ràng, súc tích và an toàn.`;
+6. Phương châm giao tiếp: Xưng hô lịch sự, trang trọng ("Kính gửi Quý Anh/Chị", "Tôi xin chia sẻ..."), đi thẳng vào trọng tâm công vụ, đưa ra giải pháp rõ ràng, súc tích và an toàn.
+7. Địa phương tỉnh Gia Lai: Tỉnh hiện đã sắp xếp, sáp nhập theo mô hình chính quyền 2 cấp (Tỉnh - Xã/Phường), KHÔNG CÒN CẤP HUYỆN, toàn tỉnh gồm 135 xã/phường (110 xã, 25 phường) trực thuộc tỉnh (sau khi hợp nhất Gia Lai - Bình Định theo Nghị quyết 202/2025/QH15). Mọi thủ tục Một cửa trước đây của cấp huyện nay được chuyển giao phân cấp về Một cửa 135 xã/phường hoặc Cổng DVCQG/VNeID.`;
 
-    const promptWithContext = contextTopic
-      ? `[Ngữ cảnh Chuyên đề: ${contextTopic}]\nCâu hỏi từ cán bộ: ${message}`
-      : message;
+    // Map requested model to recommended valid models
+    // Default: gemini-3.5-flash for general tasks
+    // Fast: gemini-3.1-flash-lite for tasks that should happen fast
+    // Complex: gemini-3.1-pro-preview for particularly complex tasks
+    let primaryModel = "gemini-3.5-flash";
+    if (model === "gemini-3.1-pro-preview") {
+      primaryModel = "gemini-3.1-pro-preview";
+    } else if (model === "gemini-3.1-flash-lite") {
+      primaryModel = "gemini-3.1-flash-lite";
+    }
+
+    // Build multi-model fallback chain based on selection
+    const modelsToTry = [
+      primaryModel,
+      "gemini-3.5-flash",
+      "gemini-3.1-flash-lite",
+      "gemini-3.8-flash",
+      "gemini-flash-latest"
+    ].filter((v, i, a) => a.indexOf(v) === i);
+
+    // Prepare multi-turn contents format
+    // Each turn: { role: 'user' | 'model', parts: [{ text: '...' }] }
+    const contents: any[] = [];
+    if (Array.isArray(history) && history.length > 0) {
+      for (const turn of history) {
+        if (turn.role && turn.content) {
+          contents.push({
+            role: turn.role === "assistant" || turn.role === "model" ? "model" : "user",
+            parts: [{ text: String(turn.content) }],
+          });
+        }
+      }
+    }
+    // Add current user message
+    contents.push({
+      role: "user",
+      parts: [{ text: message }],
+    });
 
     let replyText = "";
-    let lastError: any = null;
 
-    // Try candidate models in order to avoid 503 high demand spikes
-    for (const modelName of CANDIDATE_MODELS) {
+    for (const modelName of modelsToTry) {
       try {
         const response = await ai.models.generateContent({
           model: modelName,
-          contents: promptWithContext,
+          contents,
           config: {
             systemInstruction,
             temperature: 0.7,
@@ -102,25 +148,108 @@ Các nguyên tắc cốt lõi bạn PHẢI luôn tuân thủ và nhắc nhở:
           break;
         }
       } catch (err: any) {
-        lastError = err;
         const msg = String(err?.message || "");
-        console.warn(`[Gemini API] Model ${modelName} returned warning/error: ${msg.slice(0, 100)}`);
-        // If 503 or 429, proceed to fallback model immediately
+        console.warn(`[Gemini API] Multi-turn model ${modelName} error: ${msg.slice(0, 100)}`);
       }
     }
 
-    // If all models failed or experienced temporary outages, serve domain knowledge
     if (!replyText) {
-      console.warn("[Gemini API] All online models unavailable. Using verified domain knowledge fallback.");
+      console.warn("[Gemini API] All online models unavailable. Using domain fallback.");
       replyText = getDomainKnowledgeFallback(message);
     }
 
     res.json({ reply: replyText });
   } catch (error: any) {
     console.error("AI Error:", error);
-    // Never crash or leave user with a raw error screen
     const safeFallback = getDomainKnowledgeFallback(req.body?.message || "");
     res.json({ reply: safeFallback });
+  }
+});
+
+// Maps Grounding Endpoint using Gemini with googleMaps tool
+app.post("/api/maps-search", async (req: Request, res: Response) => {
+  try {
+    const { query, userLocation } = req.body;
+    if (!query || typeof query !== "string") {
+      res.status(400).json({ error: "Yêu cầu cung cấp câu hỏi tra cứu địa điểm." });
+      return;
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      res.json({
+        reply: "Hệ thống bản đồ công vụ Gia Lai sẵn sàng hỗ trợ tra cứu các Trung tâm hành chính công, Bộ phận Một cửa và điểm VNeID.",
+        groundingChunks: [],
+      });
+      return;
+    }
+
+    const ai = getAIClient();
+
+    const systemInstruction = `Bạn là Trợ lý Bản đồ số & Dịch vụ công vụ tỉnh Gia Lai, trực thuộc Chương trình Bình dân học vụ số tỉnh Gia Lai.
+THÔNG TIN QUAN TRỌNG VỀ ĐỊA GIỚI HÀNH CHÍNH & MÔ HÌNH CHÍNH QUYỀN 2 CẤP TỈNH GIA LAI:
+- KHÔNG CÒN CẤP HUYỆN: Tỉnh Gia Lai hiện nay đã chuyển đổi sang mô hình chính quyền địa phương 2 cấp tinh gọn (Cấp Tỉnh trực tiếp quản lý cấp Xã/Phường, bỏ hoàn toàn cấp trung gian Huyện/Thị xã/Thành phố).
+- TOÀN TỈNH HIỆN NAY CÓ 135 ĐƠN VỊ HÀNH CHÍNH CẤP XÃ/PHƯỜNG (gồm 110 xã và 25 phường) trực thuộc tỉnh:
+  + Căn cứ theo Nghị quyết số 202/2025/QH15 của Quốc hội (hợp nhất tỉnh Gia Lai và Bình Định thành tỉnh Gia Lai mới với diện tích hơn 21.550 km², dân số khoảng 3,5 triệu người).
+  + Trung tâm chính trị - hành chính cấp tỉnh đặt tại TP. Quy Nhơn; trong khi TP. Pleiku là trung tâm kinh tế - công nghệ - đào tạo then chốt vùng Tây Nguyên.
+  + Các xã, phường được phân cấp, ủy quyền mạnh mẽ để giải quyết trực tiếp các thủ tục hành chính cho người dân (Một cửa cấp xã/phường liên thông trực tiếp với các Sở, Ban, Ngành cấp tỉnh).
+  + Tại địa bàn Pleiku: Đã sáp nhập toàn bộ xã Tân Sơn vào xã Biển Hồ theo Nghị quyết 1195/NQ-UBTVQH15 (xã Biển Hồ mới rộng 28,84 km²).
+
+Nhiệm vụ của bạn:
+1. Tra cứu và chỉ dẫn chính xác địa điểm các cơ quan công quyền, Trung tâm Phục vụ Hành chính công cấp tỉnh (Cơ sở Tây Nguyên tại Pleiku và Cơ sở Duyên hải tại Quy Nhơn), Bộ phận Một cửa tại 135 xã/phường, điểm cấp CCCD/VNeID, điểm Bưu chính công ích BCCI.
+2. Nhấn mạnh và giải thích rõ cho cán bộ và người dân về mô hình 2 cấp: KHÔNG CÒN CẤP HUYỆN; mọi thủ tục trước đây của cấp huyện nay được chuyển về Bộ phận Một cửa xã/phường hoặc nộp trực tiếp lên Trung tâm Phục vụ Hành chính công tỉnh qua Cổng DVCQG/VNeID.
+3. Giải đáp rõ: Công dân các xã sáp nhập (như xã Tân Sơn cũ nay về UBND xã Biển Hồ mới) không cần phải đổi giấy tờ cũ; dữ liệu cư trú trên VNeID và Cổng Dịch vụ công Quốc gia được cơ quan Công an tự động đồng bộ theo địa danh mới miễn phí.
+4. Cung cấp chỉ dẫn đường đi và liên kết Google Maps chính xác.`;
+
+    const locationContext = userLocation?.latitude && userLocation?.longitude
+      ? `\n[Vị trí hiện tại của người dùng: Vĩ độ ${userLocation.latitude}, Kinh độ ${userLocation.longitude}]`
+      : "\n[Khu vực tìm kiếm trọng tâm: Tỉnh Gia Lai, Việt Nam]";
+
+    const fullPrompt = `${query}${locationContext}`;
+
+    let replyText = "";
+    let groundingChunks: any[] = [];
+
+    // Attempt with gemini-2.5-flash which supports googleMaps tool
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: fullPrompt,
+        config: {
+          systemInstruction,
+          tools: [{ googleMaps: {} }],
+        },
+      });
+
+      replyText = response.text || "";
+      const metadata = response.candidates?.[0]?.groundingMetadata;
+      if (metadata?.groundingChunks) {
+        groundingChunks = metadata.groundingChunks;
+      }
+    } catch (mapsErr: any) {
+      console.warn("[Maps Grounding] Failed with tool, falling back to flash model:", mapsErr?.message || mapsErr);
+      // Fallback without tool
+      try {
+        const fallbackResponse = await ai.models.generateContent({
+          model: "gemini-3.1-flash-lite",
+          contents: fullPrompt,
+          config: {
+            systemInstruction,
+          },
+        });
+        replyText = fallbackResponse.text || "";
+      } catch (err2: any) {
+        console.warn("[Maps Grounding Fallback Error]:", err2?.message || err2);
+      }
+    }
+
+    res.json({
+      reply: replyText || "Không tìm thấy thông tin phù hợp, vui lòng thử lại câu hỏi cụ thể hơn về địa điểm tại Gia Lai.",
+      groundingChunks,
+    });
+  } catch (error: any) {
+    console.error("Maps search error:", error);
+    res.status(500).json({ error: "Lỗi xử lý tra cứu bản đồ công vụ." });
   }
 });
 
