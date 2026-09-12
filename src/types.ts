@@ -17,6 +17,7 @@ export interface Lesson {
   videoNote?: string;
   objectives: string[];
   summary: string;
+  fullContent?: string;
   keyActionMessage: string;
   legalBases?: string[];
   illustrationText?: string;

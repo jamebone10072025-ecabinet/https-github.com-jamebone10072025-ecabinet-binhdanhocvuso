@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { ArrowLeft, CheckCircle, XCircle, QrCode, PlayCircle, Scale, Sparkles, BookOpen, ChevronLeft, ChevronRight, HelpCircle, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, QrCode, PlayCircle, Scale, Sparkles, BookOpen, ChevronLeft, ChevronRight, HelpCircle, ShieldCheck, CheckCircle2, Copy, Check, BookText, FileText } from "lucide-react";
 import { Lesson, Topic, Question } from "../types";
 import { TOPICS_DATA } from "../data/curriculumData";
 import { useProgress } from "../context/ProgressContext";
+import { getLessonFullLecture } from "../data/lessonContentHelper";
 
 interface LessonDetailProps {
   lesson: Lesson;
@@ -21,8 +22,18 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [showExplanations, setShowExplanations] = useState<Record<string, boolean>>({});
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [fontSize, setFontSize] = useState<"sm" | "base" | "lg">("base");
 
   const completed = isLessonCompleted(lesson.id);
+
+  const fullLectureText = getLessonFullLecture(lesson, topic);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(fullLectureText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleSelectAnswer = (questionId: string, optionIndex: number) => {
     const updatedAnswers = { ...selectedAnswers, [questionId]: optionIndex };
@@ -178,17 +189,173 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({
           </ul>
         </div>
 
-        {/* Lesson Summary & Content */}
-        <div className="space-y-3">
-          <h3 className="font-bold text-slate-900 text-base flex items-center gap-2 border-b border-slate-100 pb-2">
-            <span>Nội dung cốt lõi của bài học</span>
+        {/* Full Lecture Material (Tài liệu bài giảng toàn văn chi tiết) */}
+        <div className="rounded-2xl border border-red-100 bg-linear-to-b from-white to-slate-50/50 p-5 sm:p-7 space-y-5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3.5">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-red-700 text-white flex items-center justify-center shadow-xs">
+                <BookText className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-base sm:text-lg tracking-tight">
+                  Tài liệu bài giảng chi tiết (Toàn văn bài học)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Chuẩn sư phạm micro-learning • Bình dân học vụ số tỉnh Gia Lai
+                </p>
+              </div>
+            </div>
+
+            {/* Font size switcher and copy button */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center border border-slate-200 rounded-lg p-0.5 bg-white text-xs text-slate-600 shadow-2xs">
+                <button
+                  onClick={() => setFontSize("sm")}
+                  className={`px-2 py-1 rounded font-medium transition-colors ${fontSize === "sm" ? "bg-red-800 text-white font-bold" : "hover:bg-slate-100"}`}
+                  title="Cỡ chữ nhỏ"
+                >
+                  A-
+                </button>
+                <button
+                  onClick={() => setFontSize("base")}
+                  className={`px-2 py-1 rounded font-medium transition-colors ${fontSize === "base" ? "bg-red-800 text-white font-bold" : "hover:bg-slate-100"}`}
+                  title="Cỡ chữ chuẩn"
+                >
+                  A
+                </button>
+                <button
+                  onClick={() => setFontSize("lg")}
+                  className={`px-2 py-1 rounded font-medium transition-colors ${fontSize === "lg" ? "bg-red-800 text-white font-bold" : "hover:bg-slate-100"}`}
+                  title="Cỡ chữ lớn"
+                >
+                  A+
+                </button>
+              </div>
+
+              <button
+                onClick={handleCopy}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+                title="Sao chép toàn bộ nội dung bài giảng"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-emerald-700">Đã chép</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Sao chép bài giảng</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Render Full Lecture Content formatted */}
+          <div
+            className={`space-y-4 text-slate-800 leading-relaxed ${
+              fontSize === "sm"
+                ? "text-xs sm:text-sm leading-relaxed"
+                : fontSize === "lg"
+                ? "text-base sm:text-lg leading-loose"
+                : "text-sm sm:text-base leading-relaxed"
+            }`}
+          >
+            {fullLectureText.split("\n\n").map((paragraph, pIdx) => {
+              const trimmed = paragraph.trim();
+
+              // Opening greeting
+              if (trimmed.startsWith("Kính thưa")) {
+                return (
+                  <div
+                    key={pIdx}
+                    className="p-3.5 rounded-xl bg-red-50/60 border-l-4 border-red-700 text-red-950 font-medium italic"
+                  >
+                    {trimmed}
+                  </div>
+                );
+              }
+
+              // Main capitalized heading
+              if (pIdx === 0 && trimmed === trimmed.toUpperCase() && trimmed.length < 100) {
+                return (
+                  <div
+                    key={pIdx}
+                    className="py-2 border-b border-red-200/80 text-red-900 font-extrabold tracking-tight text-base sm:text-xl uppercase"
+                  >
+                    {trimmed}
+                  </div>
+                );
+              }
+
+              // Section headings like "1. Ba nấc thang..." or "2. Mỗi cán bộ..."
+              if (/^\d+\.\s/.test(trimmed)) {
+                const parts = trimmed.split("\n");
+                const heading = parts[0];
+                const rest = parts.slice(1).join("\n");
+                return (
+                  <div key={pIdx} className="space-y-2 mt-4 pt-2">
+                    <h4 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2 text-red-900">
+                      <span className="w-2 h-2 rounded-full bg-red-700"></span>
+                      <span>{heading}</span>
+                    </h4>
+                    {rest && <p className="whitespace-pre-line pl-4 text-slate-700">{rest}</p>}
+                  </div>
+                );
+              }
+
+              // Closing address like "Ở bài tiếp theo,..." or "Chúc mừng..."
+              if (trimmed.startsWith("Ở bài tiếp theo,") || trimmed.startsWith("Chúc mừng")) {
+                return (
+                  <div
+                    key={pIdx}
+                    className="p-4 rounded-xl bg-slate-900 text-slate-100 border border-slate-800 space-y-1.5 shadow-xs"
+                  >
+                    <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4" />
+                      <span>Lời kết bài học & Chuyển giao</span>
+                    </div>
+                    <p className="font-medium text-slate-100 whitespace-pre-line leading-relaxed">
+                      {trimmed}
+                    </p>
+                  </div>
+                );
+              }
+
+              // Golden rule / quote
+              if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+                return (
+                  <div
+                    key={pIdx}
+                    className="p-3.5 rounded-lg bg-amber-50 border-l-4 border-amber-500 text-amber-950 font-semibold text-center italic"
+                  >
+                    {trimmed}
+                  </div>
+                );
+              }
+
+              // Default standard paragraph
+              return (
+                <p key={pIdx} className="whitespace-pre-line text-slate-700">
+                  {trimmed}
+                </p>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Lesson Summary & Key Takeways */}
+        <div className="space-y-3 bg-slate-50/80 rounded-xl p-4 sm:p-5 border border-slate-200/80">
+          <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2 border-b border-slate-200 pb-2">
+            <span>Tóm tắt cốt lõi bài học</span>
           </h3>
-          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
             {lesson.summary}
           </p>
 
           {lesson.illustrationText && (
-            <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-200/70 text-xs text-amber-900 font-medium">
+            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200/70 text-xs text-amber-900 font-medium">
               <strong className="text-amber-950 font-bold block mb-1">Mô hình minh họa:</strong>
               {lesson.illustrationText}
             </div>

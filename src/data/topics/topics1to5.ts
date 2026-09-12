@@ -21,6 +21,42 @@ export const TOPICS_1_TO_5: Topic[] = [
           "Nắm bắt các mục tiêu trọng tâm theo Chỉ thị 14/CT-TTg và Nghị quyết 398/NQ-UBTVQH16"
         ],
         summary: "Số hóa là chuyển tài liệu giấy sang dạng số (quét PDF). Tin học hóa là dùng máy tính/phần mềm để thực hiện nhanh hơn quy trình nghiệp vụ cũ. Chuyển đổi số là sự thay đổi mang tính hệ thống về mô hình hoạt động, quy trình giải quyết công vụ và văn hóa làm việc dựa trên dữ liệu số và công nghệ số để tạo ra giá trị mới (như dịch vụ công phi địa giới, điều hành dựa trên dữ liệu thời gian thực). Mỗi cán bộ là một mắt xích dữ liệu quyết định chất lượng của toàn bộ hệ thống.",
+        fullContent: `CHUYỂN ĐỔI SỐ - HAI CHỮ NGHE QUEN MÀ LẠ
+
+Kính thưa Quý Anh/Chị cán bộ, công chức, viên chức và người lao động!
+
+Trong những năm gần đây, "chuyển đổi số" đã trở thành cụm từ xuất hiện với tần suất dày đặc trong các văn kiện của Đảng, Nghị quyết của Quốc hội, Quyết định của Thủ tướng Chính phủ và trong các cuộc họp giao ban đầu tuần tại mọi cơ quan, đơn vị. Nhưng giữa muôn vàn thông điệp đó, có bao giờ Quý Anh/Chị tự hỏi: Chuyển đổi số thực chất là gì? Liệu nó có phải là một điều gì đó quá xa vời, chỉ dành riêng cho các kỹ sư công nghệ thông tin hay những chuyên gia lập trình máy tính?
+
+Câu trả lời dứt khoát là: Không! Chuyển đổi số bắt đầu từ chính bàn làm việc của mỗi chúng ta.
+
+1. Ba nấc thang tiến hóa: Số hóa – Tin học hóa – Chuyển đổi số
+
+Để không bị lạc lối trong "ma trận thuật ngữ", chúng ta cần phân định rành mạch ba khái niệm nền tảng:
+
+- Thứ nhất, Số hóa (Digitization): Đây là bước chuyển đổi thông tin từ dạng vật lý sang dạng số. Ví dụ điển hình là khi Quý Anh/Chị dùng máy scan để quét một tập hồ sơ giấy, một quyết định khen thưởng hay một tờ trình thành tệp tin PDF, lưu vào máy tính. Bản thân văn bản giấy đã biến thành tệp tin số, nhưng phương thức làm việc và bản chất quy trình xử lý vẫn chưa hề thay đổi.
+
+- Thứ hai, Tin học hóa (Digitalization): Đây là việc ứng dụng công nghệ thông tin vào quy trình nghiệp vụ sẵn có để làm việc nhanh hơn, năng suất hơn. Ví dụ, thay vì dùng máy đánh chữ hay viết tay, chúng ta soạn thảo trên Microsoft Word; thay vì cử văn thư đi gửi công văn hỏa tốc bằng xe máy, chúng ta gửi qua hòm thư điện tử công vụ; thay vì sổ theo dõi văn bản bằng giấy, chúng ta nhập vào bảng tính Excel. Tuy nhiên, bản chất các bước quy trình, các tầng nấc phê duyệt và lối tư duy quản lý cũ vẫn giữ nguyên vẹn. Tin học hóa là "làm nhanh hơn việc cũ".
+
+- Thứ ba, Chuyển đổi số (Digital Transformation): Đây mới là cuộc cách mạng thực sự. Chuyển đổi số không chỉ là công nghệ, mà là sự thay đổi mang tính hệ thống về mô hình tổ chức, quy trình nghiệp vụ, phương thức cung cấp dịch vụ và đặc biệt là văn hóa làm việc dựa trên dữ liệu số. Chuyển đổi số là tái cấu trúc toàn diện quy trình công vụ. Ví dụ: Trước đây, người dân muốn làm thủ tục hành chính phải mang 5 loại giấy tờ giấy đến trụ sở ủy ban, cán bộ đối chiếu thủ công từng trang; nay với Cơ sở dữ liệu quốc gia về dân cư và Cổng Dịch vụ công, người dân chỉ cần một mã định danh VNeID, các hệ thống tự động xác thực và liên thông dữ liệu, hồ sơ được giải quyết phi địa giới hành chính, không phụ thuộc vào giờ hành chính. Đó chính là Chuyển đổi số: "Làm việc mới theo cách thức hoàn toàn mới".
+
+2. Mỗi cán bộ là một "mắt xích dữ liệu" sống còn
+
+Nhiều Anh/Chị thường băn khoăn: "Tôi làm văn phòng, làm kế toán, hay làm địa chính xã... thì chuyển đổi số có liên quan gì đến tôi?".
+
+Xin thưa rằng, dữ liệu được ví như "dầu mỏ", là nguồn tài nguyên quốc gia quý giá trong thế kỷ 21. Nhưng dầu mỏ muốn sinh ra năng lượng thì phải sạch, không bị lẫn tạp chất. Trong cơ quan nhà nước, hệ thống dù đầu tư hàng trăm tỷ đồng với máy chủ tối tân đến đâu cũng trở nên vô nghĩa nếu dữ liệu đầu vào bị sai, bị thiếu hoặc không được cập nhật kịp thời.
+
+Mỗi khi Anh/Chị tiếp nhận một hồ sơ, cập nhật đúng hạn trạng thái xử lý lên Hệ thống thông tin giải quyết thủ tục hành chính, ký số xác thực một văn bản điện tử thay cho bản giấy, hay số hóa chuẩn xác kết quả thủ tục hành chính... chính là Anh/Chị đang bơm những giọt "dầu dữ liệu" tinh khiết vào cỗ máy điều hành quốc gia. Ngược lại, nếu một khâu chậm trễ, cả chuỗi cung ứng dịch vụ công cho người dân sẽ bị tắc nghẽn. Mỗi chúng ta chính là một mắt xích dữ liệu sống còn quyết định sự thành bại của chuyển đổi số!
+
+3. Tinh thần chỉ đạo của Quốc hội và Chính phủ: Lấy người dân làm trung tâm
+
+Nghị quyết số 398/NQ-UBTVQH16 của Ủy ban Thường vụ Quốc hội và Chỉ thị số 14/CT-TTg của Thủ tướng Chính phủ đã khẳng định nhất quán quan điểm: "Chuyển đổi số trong cơ quan nhà nước phải lấy người dân, doanh nghiệp làm trung tâm phục vụ; lấy sự hài lòng của Nhân dân làm thước đo đánh giá hiệu quả".
+
+Chuyển đổi số không phải là phong trào hình thức, không phải là việc mua sắm thiết bị để trưng bày, mà phải đi vào thực chất, giải phóng cán bộ khỏi những công việc bàn giấy lặp đi lặp lại nhàm chán, để dành thời gian và trí tuệ cho những nhiệm vụ sáng tạo, phục vụ Nhân dân tốt hơn.
+
+Thông điệp cốt lõi mà tôi muốn gửi gắm tới Quý Anh/Chị trong bài mở đầu này:
+"Chuyển đổi số không chỉ là mua sắm máy móc mà là thay đổi tư duy và phương thức phụng sự Nhân dân."
+
+Ở bài tiếp theo, tôi sẽ cùng Anh/Chị tìm hiểu những công nghệ số cốt lõi đang lặng lẽ hỗ trợ công việc của chúng ta mỗi ngày. Xin chân thành cảm ơn và hẹn gặp lại Quý Anh/Chị!`,
         keyActionMessage: "Chuyển đổi số không chỉ là mua sắm máy móc mà là thay đổi tư duy và phương thức phụng sự Nhân dân.",
         legalBases: ["Chỉ thị số 14/CT-TTg ngày 22/4/2026", "Nghị quyết số 398/NQ-UBTVQH16"],
         illustrationText: "Số hóa (Scan tài liệu) -> Tin học hóa (Gửi email, gõ Word) -> Chuyển đổi số (Quy trình liên thông số hóa toàn trình, dữ liệu dùng chung).",
