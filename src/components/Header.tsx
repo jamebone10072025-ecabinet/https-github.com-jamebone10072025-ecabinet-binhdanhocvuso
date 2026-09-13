@@ -119,20 +119,6 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             </button>
 
             <button
-              id="nav-tab-exam"
-              onClick={() => setActiveTab("exam")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === "exam"
-                  ? "bg-red-50 text-red-800 border border-red-200 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-              }`}
-            >
-              <Award className="w-4 h-4 text-amber-600" />
-              <span className="hidden xl:inline">Sát hạch & chứng nhận</span>
-              <span className="xl:hidden">Sát hạch</span>
-            </button>
-
-            <button
               id="nav-tab-tools"
               onClick={() => setActiveTab("tools")}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
@@ -191,13 +177,6 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             >
               <FileText className="w-3.5 h-3.5 text-slate-500" />
               <span>Pháp lý</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("exam")}
-              className="px-3 py-1.5 rounded-lg bg-red-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs"
-            >
-              <Award className="w-3.5 h-3.5 text-amber-300" />
-              <span>Sát hạch</span>
             </button>
           </div>
         </div>
