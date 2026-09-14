@@ -17,6 +17,8 @@ import {
   Radio,
   FileCheck,
   Mic,
+  Satellite,
+  Trees,
 } from "lucide-react";
 
 interface PracticeToolsProps {
@@ -24,9 +26,16 @@ interface PracticeToolsProps {
   onOpenDocAI?: () => void;
   onOpenPodcast?: (topicId?: number) => void;
   onOpenSimulation?: () => void;
+  onOpenEarthVision?: () => void;
 }
 
-export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI, onOpenDocAI, onOpenPodcast, onOpenSimulation }) => {
+export const PracticeTools: React.FC<PracticeToolsProps> = ({
+  onSendToAI,
+  onOpenDocAI,
+  onOpenPodcast,
+  onOpenSimulation,
+  onOpenEarthVision,
+}) => {
   const [activeSubTool, setActiveSubTool] = useState<"prompt" | "smart" | "gap" | "checklist" | "search">("prompt");
 
   // Prompt Builder State
@@ -182,7 +191,7 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI, onOpen
         {onOpenPodcast && (
           <div
             onClick={() => onOpenPodcast(1)}
-            className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-red-950 text-white border border-slate-800 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group sm:col-span-2 lg:col-span-1"
+            className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-red-950 text-white border border-slate-800 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group"
           >
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-400/20 text-rose-300 border border-rose-400/30">
@@ -198,6 +207,29 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({ onSendToAI, onOpen
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-rose-300">
               <Radio className="w-5 h-5" />
+            </div>
+          </div>
+        )}
+
+        {onOpenEarthVision && (
+          <div
+            onClick={onOpenEarthVision}
+            className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950 via-teal-950 to-slate-950 text-white border border-emerald-700/40 shadow-xs cursor-pointer hover:scale-[1.01] transition-transform flex items-center justify-between gap-3 group sm:col-span-2 lg:col-span-1"
+          >
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                <Satellite className="w-3 h-3 text-emerald-400 animate-pulse" />
+                <span>Earth Engine & Vision AI</span>
+              </div>
+              <h4 className="font-bold text-sm text-white group-hover:text-emerald-200 transition-colors">
+                Giám sát tài nguyên rừng & đất
+              </h4>
+              <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                Vệ tinh Sentinel-2, Landsat 9 & Flycam kiểm lâm phát hiện sớm điểm cháy rừng, mất tán rừng và san lấp đất.
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 text-emerald-300">
+              <Trees className="w-5 h-5" />
             </div>
           </div>
         )}

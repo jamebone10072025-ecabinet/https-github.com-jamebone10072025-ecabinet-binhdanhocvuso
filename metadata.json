@@ -1,6 +1,6 @@
 {
   "name": "Bình dân học vụ số tỉnh Gia Lai",
-  "description": "Nền tảng học tập, tra cứu và sát hạch kỹ năng số cơ bản dành cho cán bộ, công chức tỉnh Gia Lai; tích hợp mô phỏng hội thoại tiếp công dân Gemini Live API Real-time Voice, phân tích văn bản đa phương thức Multimodal Gemini, Podcast học vụ TTS, Google Search và Maps Grounding.",
+  "description": "Nền tảng học tập, tra cứu và chuẩn hóa kỹ năng số dành cho cán bộ, công chức tỉnh Gia Lai; tích hợp mô phỏng hội thoại tiếp công dân Gemini Live API, phân tích văn bản đa phương thức Multimodal Gemini, giám sát viễn thám Google Earth Engine & Cloud Vision AI tài nguyên rừng - đất đai, Podcast học vụ TTS, Google Search và Maps Grounding theo mô hình chính quyền 2 cấp.",
   "requestFramePermissions": ["geolocation", "microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

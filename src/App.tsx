@@ -11,12 +11,13 @@ import { LegalDocsModal } from "./components/LegalDocsModal";
 import { DocumentIntelligence } from "./components/DocumentIntelligence";
 import { AudioPodcastPlayer } from "./components/AudioPodcastPlayer";
 import { CitizenVoiceSimulation } from "./components/CitizenVoiceSimulation";
+import { EarthVisionMonitor } from "./components/EarthVisionMonitor";
 import { Lesson, Topic } from "./types";
 import { FULL_TOPIC_LIST, TOPICS_DATA } from "./data/curriculumData";
 import { ShieldCheck, BookOpen, ExternalLink, Award, FileText } from "lucide-react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<"curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation">("curriculum");
+  const [activeTab, setActiveTab] = useState<"curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation" | "earth-vision">("curriculum");
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic | typeof FULL_TOPIC_LIST[0] | null>(null);
   const [selectedPodcastTopicId, setSelectedPodcastTopicId] = useState<number>(1);
@@ -103,12 +104,17 @@ export default function App() {
 
         {activeTab === "exam" && <ExamCertification />}
 
+        {activeTab === "earth-vision" && (
+          <EarthVisionMonitor onSendToAI={handleSendPromptToAI} />
+        )}
+
         {activeTab === "tools" && (
           <PracticeTools
             onSendToAI={handleSendPromptToAI}
             onOpenDocAI={() => setActiveTab("docai")}
             onOpenPodcast={(topicId) => handleOpenPodcastForTopic(topicId || 1)}
             onOpenSimulation={() => setActiveTab("simulation")}
+            onOpenEarthVision={() => setActiveTab("earth-vision")}
           />
         )}
         
@@ -142,13 +148,6 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-4 text-xs font-medium">
-              <button
-                onClick={() => setIsLegalModalOpen(true)}
-                className="hover:text-amber-400 transition-colors flex items-center gap-1"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Căn cứ pháp lý</span>
-              </button>
               <button
                 onClick={() => {
                   setSelectedLesson(null);

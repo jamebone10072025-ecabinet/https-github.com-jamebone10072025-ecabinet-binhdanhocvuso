@@ -1,11 +1,11 @@
 import React from "react";
-import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw, MapPin, Radio, FileCheck, Mic } from "lucide-react";
+import { BookOpen, Award, Wrench, FileText, Bot, ShieldCheck, CheckCircle2, RotateCcw, MapPin, Radio, FileCheck, Mic, Satellite, Trees } from "lucide-react";
 import { useProgress } from "../context/ProgressContext";
 
 interface HeaderProps {
-  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation";
-  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation") => void;
-  onOpenLegal: () => void;
+  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation" | "earth-vision";
+  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation" | "earth-vision") => void;
+  onOpenLegal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenLegal }) => {
@@ -119,6 +119,20 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
             </button>
 
             <button
+              id="nav-tab-earth-vision"
+              onClick={() => setActiveTab("earth-vision")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === "earth-vision"
+                  ? "bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <Satellite className="w-4 h-4 text-emerald-600" />
+              <span className="hidden xl:inline">Giám sát tài nguyên AI</span>
+              <span className="xl:hidden">Tài nguyên AI</span>
+            </button>
+
+            <button
               id="nav-tab-tools"
               onClick={() => setActiveTab("tools")}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
@@ -157,28 +171,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
               <Bot className="w-4 h-4 text-emerald-600" />
               <span>Trợ lý AI</span>
             </button>
-
-            <button
-              id="nav-btn-legal"
-              onClick={onOpenLegal}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
-            >
-              <FileText className="w-4 h-4 text-slate-500" />
-              <span className="hidden lg:inline">Căn cứ pháp lý</span>
-            </button>
           </nav>
-
-          {/* Mobile CTA & Legal button */}
-          <div className="flex md:hidden items-center gap-1.5">
-            <button
-              onClick={onOpenLegal}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 bg-slate-50 text-xs font-semibold flex items-center gap-1 shadow-2xs"
-              title="Căn cứ pháp lý"
-            >
-              <FileText className="w-3.5 h-3.5 text-slate-500" />
-              <span>Pháp lý</span>
-            </button>
-          </div>
         </div>
       </div>
 

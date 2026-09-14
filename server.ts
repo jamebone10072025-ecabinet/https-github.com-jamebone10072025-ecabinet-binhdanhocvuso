@@ -10,6 +10,7 @@ import { generateFallbackDocumentAnalysis } from "./src/data/multimodalHelper";
 import { getFallbackPodcastScript } from "./src/data/podcastData";
 import { CITIZEN_SCENARIOS } from "./src/data/citizenScenarios";
 import { getFallbackCitizenTurn, generateEvaluationReport, DialogueTurn } from "./src/data/citizenSimulationHelper";
+import { generateFallbackVisionAnalysis } from "./src/data/earthVisionData";
 
 dotenv.config();
 
@@ -766,6 +767,111 @@ Hãy chấm điểm chi tiết và xuất kết quả theo đúng định dạng
   } catch (error: any) {
     console.error("Evaluation error:", error);
     res.status(500).json({ error: "Lỗi tạo bảng đánh giá tiếp dân." });
+  }
+});
+
+// Google Earth Engine & Cloud Vision AI Endpoint for Forest & Land Monitoring
+app.post("/api/vision-forest-analysis", async (req: Request, res: Response) => {
+  try {
+    const {
+      category = "forest_fire",
+      presetId,
+      customNote,
+      image,
+      zoneName = "Gia Lai",
+      coordinates,
+    } = req.body;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      const fallbackResult = generateFallbackVisionAnalysis(category, presetId, customNote);
+      res.json({ result: fallbackResult, modelUsed: "offline-expert-vision-rule" });
+      return;
+    }
+
+    const ai = getAIClient();
+    const systemInstruction = `Bạn là Chuyên gia Cao cấp về Giám sát Viễn thám Google Earth Engine & Phân tích Thị giác Máy tính (Cloud Vision AI) thuộc Sở Nông nghiệp & Môi trường phối hợp Chi cục Kiểm lâm tỉnh Gia Lai.
+Nhiệm vụ của bạn: Phân tích ảnh vệ tinh / flycam / ảnh hiện trường tuần tra rừng và đất đai tại Gia Lai.
+Cần xuất ra kết quả phân tích theo cấu trúc JSON chuẩn:
+{
+  "title": string,
+  "zone": string,
+  "category": string,
+  "riskLevel": "Nguy cấp (Cần xử lý ngay)" | "Cảnh báo cao" | "Bình thường / Ổn định",
+  "confidenceScore": number,
+  "detectedObjects": [
+    { "name": string, "confidence": number, "boundingArea": string }
+  ],
+  "damageEstimate": {
+    "affectedAreaM2": number,
+    "severity": string,
+    "fireOrLossType": string
+  },
+  "legalBases": string[],
+  "immediateActions": string[],
+  "officialReportDraft": string
+}`;
+
+    const promptText = `Hãy phân tích tình trạng hiện trường viễn thám / flycam sau đây tại tỉnh Gia Lai:
+- Khu vực: ${zoneName}
+- Tọa độ: ${coordinates || "Tây Nguyên, Gia Lai"}
+- Phân loại nghi vấn: ${category}
+- Ghi chú hiện trường: ${customNote || "Không có ghi chú thêm"}
+- Mã tình huống preset (nếu có): ${presetId || "none"}
+
+Hãy áp dụng nghiệp vụ kiểm lâm, Luật Lâm nghiệp 2017, Luật Đất đai 2024 và các quy chuẩn PCCC rừng để xuất kết quả JSON chi tiết.`;
+
+    const contents: any[] = [];
+    if (image && typeof image === "string" && image.startsWith("data:")) {
+      const match = image.match(/^data:(.*?);base64,(.*)$/);
+      if (match) {
+        contents.push({
+          inlineData: {
+            mimeType: match[1],
+            data: match[2],
+          },
+        });
+      }
+    }
+    contents.push({ text: promptText });
+
+    let responseText = "";
+    for (const modelName of CANDIDATE_MODELS) {
+      try {
+        const resp = await ai.models.generateContent({
+          model: modelName,
+          contents: contents.length === 1 ? promptText : contents,
+          config: {
+            systemInstruction,
+            responseMimeType: "application/json",
+            temperature: 0.2,
+          },
+        });
+        if (resp.text) {
+          responseText = resp.text;
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`[Vision AI Analysis] ${modelName} failed:`, err?.message || err);
+      }
+    }
+
+    if (responseText) {
+      try {
+        const parsed = JSON.parse(responseText);
+        res.json({ result: parsed, modelUsed: "gemini-multimodal-vision" });
+        return;
+      } catch (e) {
+        // fallback
+      }
+    }
+
+    const fallback = generateFallbackVisionAnalysis(category, presetId, customNote);
+    res.json({ result: fallback, modelUsed: "offline-expert-vision-rule" });
+  } catch (err: any) {
+    console.error("[Vision Analysis Endpoint Error]:", err);
+    const fallback = generateFallbackVisionAnalysis(req.body?.category || "forest_fire", req.body?.presetId);
+    res.json({ result: fallback, modelUsed: "offline-fallback-safe" });
   }
 });
 

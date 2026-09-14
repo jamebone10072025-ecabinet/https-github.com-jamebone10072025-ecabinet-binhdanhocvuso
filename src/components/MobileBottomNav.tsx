@@ -1,9 +1,9 @@
 import React from "react";
-import { BookOpen, Award, Wrench, MapPin, Bot, FileText, Radio, FileCheck, Mic } from "lucide-react";
+import { BookOpen, Award, Wrench, MapPin, Bot, FileText, Radio, FileCheck, Mic, Satellite } from "lucide-react";
 
 interface MobileBottomNavProps {
-  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation";
-  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation") => void;
+  activeTab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation" | "earth-vision";
+  setActiveTab: (tab: "curriculum" | "exam" | "tools" | "maps" | "legal" | "ai" | "docai" | "podcast" | "simulation" | "earth-vision") => void;
   onOpenLegal: () => void;
 }
 
@@ -24,19 +24,19 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       icon: Mic,
     },
     {
-      id: "podcast" as const,
-      label: "Podcast",
-      icon: Radio,
-    },
-    {
       id: "docai" as const,
       label: "Soát VB",
       icon: FileCheck,
     },
     {
-      id: "exam" as const,
-      label: "Sát hạch",
-      icon: Award,
+      id: "earth-vision" as const,
+      label: "Tài nguyên",
+      icon: Satellite,
+    },
+    {
+      id: "podcast" as const,
+      label: "Podcast",
+      icon: Radio,
     },
     {
       id: "tools" as const,
