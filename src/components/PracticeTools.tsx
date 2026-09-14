@@ -211,6 +211,8 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({
           </div>
         )}
 
+        {/* Tạm thời ẩn theo yêu cầu: Google Earth Engine & Cloud Vision AI */}
+        {/*
         {onOpenEarthVision && (
           <div
             onClick={onOpenEarthVision}
@@ -233,6 +235,7 @@ export const PracticeTools: React.FC<PracticeToolsProps> = ({
             </div>
           </div>
         )}
+        */}
       </div>
 
       {/* Sub-tool Switcher Header */}

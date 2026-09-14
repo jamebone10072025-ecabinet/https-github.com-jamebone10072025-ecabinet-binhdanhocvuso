@@ -118,6 +118,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
               <span>Soát văn bản AI</span>
             </button>
 
+            {/* Tạm thời ẩn theo yêu cầu: Google Earth Engine & Cloud Vision AI */}
+            {/*
             <button
               id="nav-tab-earth-vision"
               onClick={() => setActiveTab("earth-vision")}
@@ -131,6 +133,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, onOpenL
               <span className="hidden xl:inline">Giám sát tài nguyên AI</span>
               <span className="xl:hidden">Tài nguyên AI</span>
             </button>
+            */}
 
             <button
               id="nav-tab-tools"

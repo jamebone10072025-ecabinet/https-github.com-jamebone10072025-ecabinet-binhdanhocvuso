@@ -19,7 +19,13 @@ import {
   ListMusic,
   CheckCircle2,
   Clock,
-  Mic
+  Mic,
+  Settings2,
+  UserCheck,
+  ChevronDown,
+  ChevronUp,
+  RotateCw,
+  Sparkle
 } from "lucide-react";
 import { PODCAST_EPISODES, PodcastEpisode, getFallbackPodcastScript } from "../data/podcastData";
 import { FULL_TOPIC_LIST } from "../data/curriculumData";
@@ -29,6 +35,66 @@ interface AudioPodcastPlayerProps {
   initialLessonTitle?: string;
   onSelectTopic?: (topicId: number) => void;
 }
+
+export type VoiceProfileKey = "female_news" | "male_official" | "female_guide" | "male_propaganda" | "custom";
+
+interface VoiceProfileConfig {
+  id: VoiceProfileKey;
+  name: string;
+  badge: string;
+  gender: "female" | "male" | "custom";
+  pitch: number;
+  rate: number;
+  description: string;
+}
+
+const VOICE_PROFILES: VoiceProfileConfig[] = [
+  {
+    id: "female_news",
+    name: "Nữ Phát thanh viên",
+    badge: "Truyền cảm • Chuẩn tin tức",
+    gender: "female",
+    pitch: 1.1,
+    rate: 1.0,
+    description: "Âm sắc thanh thoát, rõ ràng, truyền cảm - chuẩn mực cho bản tin học tập công vụ và phổ biến kiến thức.",
+  },
+  {
+    id: "male_official",
+    name: "Nam Hành chính công",
+    badge: "Trầm ấm • Đĩnh đạc",
+    gender: "male",
+    pitch: 0.84,
+    rate: 0.95,
+    description: "Tông giọng nam trầm chắc, trang nghiêm - phù hợp quán triệt chỉ thị, nghị quyết và quy chế.",
+  },
+  {
+    id: "female_guide",
+    name: "Nữ Hướng dẫn viên",
+    badge: "Nhẹ nhàng • Dễ tiếp thu",
+    gender: "female",
+    pitch: 1.03,
+    rate: 0.9,
+    description: "Tiết tấu khoan thai, nhẹ nhàng, thân thiện - tối ưu cho hướng dẫn từng bước thao tác phần mềm.",
+  },
+  {
+    id: "male_propaganda",
+    name: "Nam Tuyên truyền số",
+    badge: "Dứt khoát • Đanh thép",
+    gender: "male",
+    pitch: 0.9,
+    rate: 1.05,
+    description: "Phong cách phát thanh viên đài truyền thanh cơ sở, dứt khoát, năng động, thôi thúc hành động.",
+  },
+  {
+    id: "custom",
+    name: "Tùy chỉnh cá nhân",
+    badge: "Tự do điều chỉnh",
+    gender: "custom",
+    pitch: 1.0,
+    rate: 1.0,
+    description: "Tự do lựa chọn danh sách giọng đọc của thiết bị, tùy chỉnh độ trầm bổng (Pitch) và tốc độ phát.",
+  },
+];
 
 export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
   initialTopicId,
@@ -41,12 +107,31 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
   });
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState<number>(1.0);
+  const [playbackRate, setPlaybackRate] = useState<number>(() => {
+    const saved = localStorage.getItem("podcast_playback_rate");
+    return saved ? parseFloat(saved) : 1.0;
+  });
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0); // 0 to 100
   const [currentTime, setCurrentTime] = useState("00:00");
   const [totalDuration, setTotalDuration] = useState("02:45");
   const [copied, setCopied] = useState(false);
+
+  // Voice Customization State
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>(() => {
+    return localStorage.getItem("podcast_voice_uri") || "";
+  });
+  const [activeProfile, setActiveProfile] = useState<VoiceProfileKey>(() => {
+    return (localStorage.getItem("podcast_voice_profile") as VoiceProfileKey) || "female_news";
+  });
+  const [pitch, setPitch] = useState<number>(() => {
+    const saved = localStorage.getItem("podcast_pitch");
+    return saved ? parseFloat(saved) : 1.1;
+  });
+  const [volume, setVolume] = useState<number>(1.0);
+  const [showVoicePanel, setShowVoicePanel] = useState<boolean>(false);
+  const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
 
   // AI Script generation modal/state
   const [customTopicInput, setCustomTopicInput] = useState("");
@@ -56,6 +141,56 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const timerRef = useRef<any>(null);
   const totalSecondsRef = useRef<number>(165); // default 2m45s
+
+  // Load and listen for system voices
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        setAvailableVoices(voices);
+
+        // Auto-select Vietnamese voice if not set
+        setSelectedVoiceURI((prev) => {
+          if (prev && voices.some((v) => v.voiceURI === prev)) return prev;
+
+          // Priority 1: Vietnamese voices
+          const viVoices = voices.filter(
+            (v) =>
+              v.lang.toLowerCase().startsWith("vi") ||
+              v.name.toLowerCase().includes("vietnam") ||
+              v.name.toLowerCase().includes("vietnamese")
+          );
+
+          if (viVoices.length > 0) {
+            // Find female or natural voice by default
+            const femaleVi = viVoices.find(
+              (v) =>
+                v.name.toLowerCase().includes("hoaimy") ||
+                v.name.toLowerCase().includes("google") ||
+                v.name.toLowerCase().includes("mai") ||
+                v.name.toLowerCase().includes("linh") ||
+                v.name.toLowerCase().includes("female")
+            );
+            return femaleVi ? femaleVi.voiceURI : viVoices[0].voiceURI;
+          }
+
+          // Fallback to first system voice
+          return voices[0]?.voiceURI || "";
+        });
+      }
+    };
+
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
 
   // Initialize and select episode when topic changes
   useEffect(() => {
@@ -99,6 +234,7 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
     }
     if (timerRef.current) clearInterval(timerRef.current);
     setIsPlaying(false);
+    setIsPreviewingVoice(false);
     setProgress(0);
     setCurrentTime("00:00");
   };
@@ -124,23 +260,37 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
     }
   };
 
+  const getActiveVoice = () => {
+    if (selectedVoiceURI) {
+      const found = availableVoices.find((v) => v.voiceURI === selectedVoiceURI);
+      if (found) return found;
+    }
+    // Fallback search
+    return availableVoices.find(
+      (v) =>
+        v.lang.toLowerCase().startsWith("vi") ||
+        v.name.toLowerCase().includes("vietnam") ||
+        v.name.toLowerCase().includes("vietnamese")
+    ) || availableVoices[0];
+  };
+
   const startSpeaking = () => {
     window.speechSynthesis.cancel();
 
     const textToRead = currentEpisode.script;
     const utterance = new SpeechSynthesisUtterance(textToRead);
 
-    // Set Vietnamese voice
-    const voices = window.speechSynthesis.getVoices();
-    const viVoice = voices.find(
-      (v) => v.lang.startsWith("vi") || v.name.toLowerCase().includes("vietnam") || v.name.toLowerCase().includes("vietnamese")
-    );
-    if (viVoice) {
-      utterance.voice = viVoice;
+    const voice = getActiveVoice();
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang || "vi-VN";
+    } else {
+      utterance.lang = "vi-VN";
     }
-    utterance.lang = "vi-VN";
+
     utterance.rate = playbackRate;
-    utterance.pitch = 1.0;
+    utterance.pitch = pitch;
+    utterance.volume = isMuted ? 0 : volume;
 
     // Estimate duration based on word count & playbackRate
     const wordCount = textToRead.split(/\s+/).length;
@@ -185,10 +335,121 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
     }, 1000);
   };
 
+  // Switch voice profile (Preset)
+  const handleSelectVoiceProfile = (profKey: VoiceProfileKey) => {
+    setActiveProfile(profKey);
+    localStorage.setItem("podcast_voice_profile", profKey);
+
+    const prof = VOICE_PROFILES.find((p) => p.id === profKey);
+    if (!prof) return;
+
+    let targetPitch = prof.pitch;
+    let targetRate = prof.rate;
+
+    // Auto find suitable voice in availableVoices if possible
+    const viVoices = availableVoices.filter(
+      (v) =>
+        v.lang.toLowerCase().startsWith("vi") ||
+        v.name.toLowerCase().includes("vietnam") ||
+        v.name.toLowerCase().includes("vietnamese")
+    );
+
+    if (viVoices.length > 0) {
+      if (prof.gender === "female") {
+        const femaleVoice = viVoices.find(
+          (v) =>
+            v.name.toLowerCase().includes("hoaimy") ||
+            v.name.toLowerCase().includes("google") ||
+            v.name.toLowerCase().includes("mai") ||
+            v.name.toLowerCase().includes("linh") ||
+            v.name.toLowerCase().includes("female")
+        );
+        if (femaleVoice) {
+          setSelectedVoiceURI(femaleVoice.voiceURI);
+          localStorage.setItem("podcast_voice_uri", femaleVoice.voiceURI);
+        }
+      } else if (prof.gender === "male") {
+        const maleVoice = viVoices.find(
+          (v) =>
+            v.name.toLowerCase().includes("namminh") ||
+            v.name.toLowerCase().includes("an") ||
+            v.name.toLowerCase().includes("male")
+        );
+        if (maleVoice) {
+          setSelectedVoiceURI(maleVoice.voiceURI);
+          localStorage.setItem("podcast_voice_uri", maleVoice.voiceURI);
+        }
+      }
+    }
+
+    setPitch(targetPitch);
+    setPlaybackRate(targetRate);
+    localStorage.setItem("podcast_pitch", String(targetPitch));
+    localStorage.setItem("podcast_playback_rate", String(targetRate));
+
+    if (isPlaying) {
+      setTimeout(() => startSpeaking(), 100);
+    }
+  };
+
+  // Preview Voice Sample
+  const handlePreviewVoice = () => {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    setIsPlaying(false);
+    setIsPreviewingVoice(true);
+
+    const activeProfConfig = VOICE_PROFILES.find((p) => p.id === activeProfile);
+    const sampleText = `Kính chào các đồng chí! Đây là âm sắc thử nghiệm của phong cách ${
+      activeProfConfig?.name || "phát thanh viên"
+    } thuộc kênh Bình dân học vụ số tỉnh Gia Lai. Kính chúc các đồng chí học tập hiệu quả!`;
+
+    const previewUtterance = new SpeechSynthesisUtterance(sampleText);
+    const voice = getActiveVoice();
+    if (voice) {
+      previewUtterance.voice = voice;
+      previewUtterance.lang = voice.lang || "vi-VN";
+    } else {
+      previewUtterance.lang = "vi-VN";
+    }
+    previewUtterance.rate = playbackRate;
+    previewUtterance.pitch = pitch;
+    previewUtterance.volume = isMuted ? 0 : volume;
+
+    previewUtterance.onend = () => {
+      setIsPreviewingVoice(false);
+    };
+    previewUtterance.onerror = () => {
+      setIsPreviewingVoice(false);
+    };
+
+    window.speechSynthesis.speak(previewUtterance);
+  };
+
   const handleSpeedChange = (rate: number) => {
     setPlaybackRate(rate);
+    localStorage.setItem("podcast_playback_rate", String(rate));
     if (isPlaying) {
-      // restart with new rate
+      startSpeaking();
+    }
+  };
+
+  const handlePitchChange = (newPitch: number) => {
+    setPitch(newPitch);
+    setActiveProfile("custom");
+    localStorage.setItem("podcast_voice_profile", "custom");
+    localStorage.setItem("podcast_pitch", String(newPitch));
+    if (isPlaying) {
+      startSpeaking();
+    }
+  };
+
+  const handleSelectDeviceVoice = (uri: string) => {
+    setSelectedVoiceURI(uri);
+    localStorage.setItem("podcast_voice_uri", uri);
+    setActiveProfile("custom");
+    localStorage.setItem("podcast_voice_profile", "custom");
+    if (isPlaying) {
       startSpeaking();
     }
   };
@@ -230,7 +491,6 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
         setCurrentEpisode(newEp);
         setGenerationSuccess(true);
         setTimeout(() => setGenerationSuccess(false), 3000);
-        // Start speaking new script
         setTimeout(() => {
           startSpeaking();
         }, 500);
@@ -241,6 +501,9 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
       setIsGeneratingScript(false);
     }
   };
+
+  const currentVoiceObj = getActiveVoice();
+  const currentProfileConfig = VOICE_PROFILES.find((p) => p.id === activeProfile) || VOICE_PROFILES[0];
 
   return (
     <div className="space-y-6">
@@ -260,13 +523,18 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
             </p>
           </div>
 
-          <div className="shrink-0 bg-black/30 backdrop-blur-xs p-3.5 rounded-xl border border-white/10 text-xs text-rose-100 space-y-1">
+          <div className="shrink-0 bg-black/30 backdrop-blur-xs p-3.5 rounded-xl border border-white/10 text-xs text-rose-100 space-y-1.5">
             <div className="flex items-center gap-2 text-amber-300 font-bold">
               <Headphones className="w-4 h-4" />
-              <span>Âm thanh chuẩn tiếng Việt</span>
+              <span>Tùy biến giọng đọc linh hoạt</span>
             </div>
-            <div>• Tự động đồng bộ giọng đọc AI</div>
-            <div>• 26 Chuyên đề công vụ số</div>
+            <div className="text-[11px] text-amber-100 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-ping" />
+              <span>Đang dùng: <strong>{currentProfileConfig.name}</strong></span>
+            </div>
+            <div className="text-[11px] text-rose-200">
+              {currentVoiceObj?.name ? `Thiết bị: ${currentVoiceObj.name.slice(0, 24)}...` : "Giọng chuẩn hệ thống"}
+            </div>
           </div>
         </div>
       </div>
@@ -299,6 +567,27 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
 
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setShowVoicePanel((prev) => !prev)}
+                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer ${
+                  showVoicePanel
+                    ? "bg-red-700 text-white border-red-700 shadow-red-700/20"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                }`}
+                title="Tùy chỉnh giọng đọc và tốc độ"
+              >
+                <Mic className="w-3.5 h-3.5 text-amber-400" />
+                <span>Đổi giọng đọc</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-800 font-bold ml-0.5">
+                  {currentProfileConfig.name.split(" ")[0]}
+                </span>
+                {showVoicePanel ? (
+                  <ChevronUp className="w-3 h-3" />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+              </button>
+
+              <button
                 onClick={handleCopyScript}
                 className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                 title="Sao chép kịch bản phát thanh"
@@ -311,7 +600,7 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Sao chép kịch bản</span>
+                    <span>Sao chép</span>
                   </>
                 )}
               </button>
@@ -321,6 +610,182 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-3xl">
             {currentEpisode.summary}
           </p>
+
+          {/* Quick Voice Profile Selector Pills */}
+          <div className="bg-slate-100/80 rounded-xl p-2.5 border border-slate-200/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Mic className="w-3.5 h-3.5 text-red-700" />
+                <span>Chọn nhanh phong cách giọng đọc phát thanh:</span>
+              </span>
+              <button
+                onClick={handlePreviewVoice}
+                disabled={isPreviewingVoice}
+                className="text-xs font-semibold text-red-700 hover:text-red-800 bg-white hover:bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 transition-colors flex items-center gap-1 w-fit cursor-pointer disabled:opacity-50"
+              >
+                {isPreviewingVoice ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin text-red-600" />
+                    <span>Đang phát thử...</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-3 h-3" />
+                    <span>Nghe thử giọng</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+              {VOICE_PROFILES.map((prof) => {
+                const isSelected = activeProfile === prof.id;
+                return (
+                  <button
+                    key={prof.id}
+                    onClick={() => handleSelectVoiceProfile(prof.id)}
+                    className={`text-left p-2 rounded-lg border text-xs transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-red-700 text-white border-red-700 font-bold shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="font-bold truncate">{prof.name}</div>
+                    <div className={`text-[10px] truncate ${isSelected ? "text-amber-200" : "text-slate-400"}`}>
+                      {prof.badge}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Voice Settings Drawer / Advanced Customization */}
+          {showVoicePanel && (
+            <div className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-4 sm:p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center justify-between border-b border-amber-200 pb-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                  <Sliders className="w-4 h-4 text-amber-700" />
+                  <span>Bảng Tùy chỉnh Giọng đọc & Âm sắc chi tiết</span>
+                </div>
+                <button
+                  onClick={() => {
+                    handleSelectVoiceProfile("female_news");
+                  }}
+                  className="text-[11px] font-semibold text-amber-800 hover:text-amber-950 flex items-center gap-1 cursor-pointer"
+                  title="Đặt lại cài đặt mặc định"
+                >
+                  <RotateCw className="w-3 h-3" />
+                  <span>Khôi phục mặc định</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Device Voice Dropdown */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-800 block">
+                    Thiết bị giọng đọc (Hệ điều hành / Trình duyệt):
+                  </label>
+                  <select
+                    value={selectedVoiceURI}
+                    onChange={(e) => handleSelectDeviceVoice(e.target.value)}
+                    className="w-full text-xs p-2 rounded-lg border border-amber-300 bg-white text-slate-800 font-medium focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  >
+                    {availableVoices.length === 0 ? (
+                      <option value="">Đang tải danh sách giọng đọc...</option>
+                    ) : (
+                      <>
+                        <optgroup label="Giọng Tiếng Việt (Khuyên dùng)">
+                          {availableVoices
+                            .filter(
+                              (v) =>
+                                v.lang.toLowerCase().startsWith("vi") ||
+                                v.name.toLowerCase().includes("vietnam") ||
+                                v.name.toLowerCase().includes("vietnamese")
+                            )
+                            .map((v) => (
+                              <option key={v.voiceURI} value={v.voiceURI}>
+                                🇻🇳 {v.name} ({v.lang})
+                              </option>
+                            ))}
+                        </optgroup>
+                        <optgroup label="Tất cả giọng đọc hệ thống khác">
+                          {availableVoices
+                            .filter(
+                              (v) =>
+                                !v.lang.toLowerCase().startsWith("vi") &&
+                                !v.name.toLowerCase().includes("vietnam") &&
+                                !v.name.toLowerCase().includes("vietnamese")
+                            )
+                            .map((v) => (
+                              <option key={v.voiceURI} value={v.voiceURI}>
+                                🌐 {v.name} ({v.lang})
+                              </option>
+                            ))}
+                        </optgroup>
+                      </>
+                    )}
+                  </select>
+                  <p className="text-[11px] text-amber-800/80">
+                    Hệ thống tự động phát hiện giọng đọc tiếng Việt của Google, Microsoft Natural, Apple Siri hoặc thiết bị di động của bạn.
+                  </p>
+                </div>
+
+                {/* Sliders for Pitch and Volume */}
+                <div className="space-y-3">
+                  {/* Pitch Slider */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs font-semibold text-slate-800">
+                      <span>Cao độ giọng (Trầm / Bổng):</span>
+                      <span className="text-red-700 font-mono">
+                        {pitch < 0.9 ? "Trầm ấm (Nam)" : pitch > 1.05 ? "Trong cao (Nữ)" : "Tự nhiên"} ({pitch.toFixed(2)}x)
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.6"
+                      max="1.4"
+                      step="0.05"
+                      value={pitch}
+                      onChange={(e) => handlePitchChange(parseFloat(e.target.value))}
+                      className="w-full accent-red-700 cursor-pointer h-1.5 bg-amber-200 rounded-lg"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-500 font-medium">
+                      <span>0.6x (Rất trầm)</span>
+                      <span>1.0x (Chuẩn)</span>
+                      <span>1.4x (Thanh trong)</span>
+                    </div>
+                  </div>
+
+                  {/* Volume Slider */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs font-semibold text-slate-800">
+                      <span>Âm lượng phát:</span>
+                      <span className="text-slate-600 font-mono">{Math.round(volume * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="1.0"
+                      step="0.05"
+                      value={volume}
+                      onChange={(e) => setVolume(parseFloat(e.target.value))}
+                      className="w-full accent-red-700 cursor-pointer h-1.5 bg-amber-200 rounded-lg"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile details tip */}
+              <div className="bg-white/80 rounded-lg p-2.5 border border-amber-200 text-xs text-slate-700 flex items-start gap-2">
+                <Sparkle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-red-800">{currentProfileConfig.name}:</strong>{" "}
+                  {currentProfileConfig.description}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Audio Wave Visualizer Simulation */}
           <div className="h-10 flex items-end justify-center gap-1.5 bg-slate-900/90 rounded-xl px-4 py-2 shadow-inner">
@@ -433,8 +898,9 @@ export const AudioPodcastPlayer: React.FC<AudioPodcastPlayerProps> = ({
               <BookOpen className="w-4 h-4 text-red-700" />
               <span>Lời thoại kịch bản phát thanh công vụ</span>
             </h4>
-            <span className="text-[11px] text-slate-500">
-              Giọng đọc phát thanh viên hành chính tỉnh Gia Lai
+            <span className="text-[11px] text-slate-500 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-600" />
+              <span>{currentProfileConfig.name} ({currentProfileConfig.badge})</span>
             </span>
           </div>
 

@@ -28,11 +28,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       label: "Soát VB",
       icon: FileCheck,
     },
-    {
-      id: "earth-vision" as const,
-      label: "Tài nguyên",
-      icon: Satellite,
-    },
+    // {
+    //   id: "earth-vision" as const,
+    //   label: "Tài nguyên",
+    //   icon: Satellite,
+    // },
     {
       id: "podcast" as const,
       label: "Podcast",
@@ -52,7 +52,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-1 py-1 pb-safe">
-      <div className="grid grid-cols-7 items-center justify-around gap-0.5 max-w-lg mx-auto">
+      <div className="grid grid-cols-6 items-center justify-around gap-0.5 max-w-lg mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
